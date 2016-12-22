@@ -102,6 +102,11 @@
             ground.material = groundMaterial;
             */
 
+            player.computeWorldMatrix();
+            var matrix = player.getWorldMatrix();
+            var up_local = new BABYLON.Vector3(0,0,-0.5);
+            var up_global = BABYLON.Vector3.TransformCoordinates(up_local, matrix);
+
 
 
         	window.addEventListener("keydown", function(evt)
@@ -117,7 +122,7 @@
                     case 68:        player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
                                     break;      //D
                     case 83:
-                                    player.applyImpulse(new BABYLON.Vector3(0, 0, 5), player.position);
+                                    player.applyImpulse(up_global, player.position);
                                     player.setLinearVelocity.scaleEqual(0.5);
                                     break;      //S
                     case 32:        shoot(scene);                 break;      //SPACE
