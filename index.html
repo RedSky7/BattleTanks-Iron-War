@@ -1,7 +1,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
-    <title>Babylon - Getting Started</title>
+    <title>BattleTanks - Iron War</title>
     <!-- link to the last version of babylon -->
     <script src="scripts\babylon.custom.js"></script>
     <script src="scripts\babylon.objFileLoader.js"></script>
@@ -21,12 +21,38 @@
         });
 
         var player;
+        var bots = [];
+        var shoots = [];
 
         function createPlayer(scene)
         {
             player = BABYLON.Mesh.CreateBox("Player", 1.0, scene);
             player.position = new BABYLON.Vector3(-4, 15, 0);
-            player.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 1, restitution: 0 });
+            player.setPhysicsState(BABYLON.PhysicsEngine.BoxImpostor, { mass: 0.001, friction: 0.001, restitution: 0 });
+        }
+
+        function createBots(number, scene)
+        {
+            for(i = 0; i < number; i++)
+            {
+                bots.push(BABYLON.Mesh.CreateBox("Bot", 1.0, scene));
+                bots[bots.length - 1].position =  new BABYLON.Vector3(-5, 15, i);
+                bots[bots.length - 1].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 0.5, restitution: 0 });
+            }
+        }
+
+        function shoot(scene)
+        {
+            shoots.push(BABYLON.Mesh.CreateSphere("sphere", 10.0, 0.1, scene));
+            shoots[shoots.length - 1].position = new BABYLON.Vector3(player.position.x + 2, player.position.y + 2, player.position.z);
+            //shoots[shoots.length - 1].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 1, restitution: 0 });
+            shoots[shoots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(shoots[shoots.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+            shoots[shoots.length - 1].setLinearVelocity(new BABYLON.Vector3(1, -1, 0));
+        }
+
+        function changeCamera(scene, controlCamera)
+        {
+            scene.activeCamera = controlCamera;
         }
 
 
@@ -38,11 +64,14 @@
             // create a basic BJS Scene object
             var scene = new BABYLON.Scene(engine);
 
-            var gravityVector = new BABYLON.Vector3(0,-9.81, 0);
+            var gravityVector = new BABYLON.Vector3(0,-4.81, 0);
             var physicsPlugin = new BABYLON.CannonJSPlugin();
             scene.enablePhysics(gravityVector, physicsPlugin);
 
-            var camera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, -45), scene);
+            var controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 15, 45), scene);
+            var FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
+
+            scene.activeCamera = FPCamera;
 
             // create a basic light, aiming 0,1,0 - meaning, to the sky
             var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
@@ -50,9 +79,9 @@
         	// gradnja kocke
 
             createPlayer(scene);
+            //createBots(3, scene);
 
-
-            camera.target = player;
+            FPCamera.target = player;
             //camera.applyGravity = true;
 
             // create a built-in "ground" shape; its constructor takes the same 5 params as the sphere's one
@@ -60,10 +89,11 @@
             groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
 
 
-            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 250, 0, 40, scene, false, function () {
-            ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
-            ground.material = groundMaterial;
-        });
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 50, 0, 40, scene, false, function ()
+            {
+                ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
+                ground.material = groundMaterial;
+            });
 
             //box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
 
@@ -74,9 +104,11 @@
                 switch(evt.keyCode)
                 {
                     case 65:        player.rotation.y -= 0.05;    break;      //A
-                    case 87:        player.position.z += 0.05;    break;      //W
+                    case 87:        player.position.z -= 0.05;    break;      //W
                     case 68:        player.rotation.y += 0.05;    break;      //D
-                    case 83:        player.position.z -= 0.05;    break;      //S
+                    case 83:        player.position.z += 0.05;    break;      //S
+                    case 32:        shoot(scene);                 break;      //SPACE
+                    case 86:        changeCamera(scene, controlCamera);          break;      //V (VIEW)
                 }
         	},false);
 
