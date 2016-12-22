@@ -28,7 +28,7 @@
         {
             player = BABYLON.Mesh.CreateBox("Player", 1.0, scene);
             player.position = new BABYLON.Vector3(-4, 15, 0);
-            player.setPhysicsState(BABYLON.PhysicsEngine.BoxImpostor, { mass: 0.001, friction: 0.001, restitution: 0 });
+            player.setPhysicsState(BABYLON.PhysicsEngine.BoxImpostor, { mass: 1, friction: 0.001, restitution: 0 });
         }
 
         function createBots(number, scene)
@@ -44,10 +44,11 @@
         function shoot(scene)
         {
             shoots.push(BABYLON.Mesh.CreateSphere("sphere", 10.0, 0.1, scene));
-            shoots[shoots.length - 1].position = new BABYLON.Vector3(player.position.x + 2, player.position.y + 2, player.position.z);
-            //shoots[shoots.length - 1].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 1, restitution: 0 });
-            shoots[shoots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(shoots[shoots.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
-            shoots[shoots.length - 1].setLinearVelocity(new BABYLON.Vector3(1, -1, 0));
+            shoots[shoots.length - 1].position = new BABYLON.Vector3(player.position.x, player.position.y, player.position.z-0.1);
+            shoots[shoots.length - 1].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 1, restitution: 0 });
+            //shoots[shoots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(shoots[shoots.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+            shoots[shoots.length - 1].applyImpulse(new BABYLON.Vector3(0, 0, -20), shoots[shoots.length - 1].position);
+            shoots[shoots.length - 1].setLinearVelocity.scaleEqual(0.9);
         }
 
         function changeCamera(scene, controlCamera)
@@ -88,14 +89,18 @@
             var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
             groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
 
-
+            /*
             var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 50, 0, 40, scene, false, function ()
             {
                 ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
                 ground.material = groundMaterial;
             });
+            */
 
-            //box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+            var ground = BABYLON.Mesh.CreateGround('ground1', 60, 60, 2, scene);
+            ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
+            ground.material = groundMaterial;
+
 
 
 
@@ -103,10 +108,18 @@
             {
                 switch(evt.keyCode)
                 {
-                    case 65:        player.rotation.y -= 0.05;    break;      //A
-                    case 87:        player.position.z -= 0.05;    break;      //W
-                    case 68:        player.rotation.y += 0.05;    break;      //D
-                    case 83:        player.position.z += 0.05;    break;      //S
+                    case 65:        player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                                    break;
+
+                    case 87:        player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                                    break;       //W
+
+                    case 68:        player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                                    break;      //D
+                    case 83:
+                                    player.applyImpulse(new BABYLON.Vector3(0, 0, 0.5), player.position);
+                                    player.setLinearVelocity.scaleEqual(0.5);
+                                    break;      //S
                     case 32:        shoot(scene);                 break;      //SPACE
                     case 86:        changeCamera(scene, controlCamera);          break;      //V (VIEW)
                 }
