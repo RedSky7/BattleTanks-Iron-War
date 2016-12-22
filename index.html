@@ -28,7 +28,7 @@
         {
             player = BABYLON.Mesh.CreateBox("Player", 1.0, scene);
             player.position = new BABYLON.Vector3(-4, 15, 0);
-            player.setPhysicsState(BABYLON.PhysicsEngine.BoxImpostor, { mass: 1, friction: 0.001, restitution: 0 });
+            player.setPhysicsState(BABYLON.PhysicsEngine.BoxImpostor, { mass: 10, friction: 0.01, restitution: 0 });
         }
 
         function createBots(number, scene)
@@ -89,18 +89,18 @@
             var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
             groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
 
-            /*
+
             var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 50, 0, 40, scene, false, function ()
             {
                 ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
                 ground.material = groundMaterial;
             });
-            */
 
+            /*
             var ground = BABYLON.Mesh.CreateGround('ground1', 60, 60, 2, scene);
             ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
             ground.material = groundMaterial;
-
+            */
 
 
 
@@ -117,13 +117,13 @@
                     case 68:        player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
                                     break;      //D
                     case 83:
-                                    player.applyImpulse(new BABYLON.Vector3(0, 0, 0.5), player.position);
+                                    player.applyImpulse(new BABYLON.Vector3(0, 0, 5), player.position);
                                     player.setLinearVelocity.scaleEqual(0.5);
                                     break;      //S
                     case 32:        shoot(scene);                 break;      //SPACE
                     case 86:        changeCamera(scene, controlCamera);          break;      //V (VIEW)
                 }
-        	},false);
+        	}, false);
 
             return scene;
     }
