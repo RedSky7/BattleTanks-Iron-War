@@ -1,0 +1,98 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>Babylon - Getting Started</title>
+    <!-- link to the last version of babylon -->
+    <script src="scripts\babylon.custom.js"></script>
+    <script src="scripts\babylon.objFileLoader.js"></script>
+    <link rel="stylesheet" href="style\style.css">
+
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+
+
+    <script>
+
+        window.addEventListener('DOMContentLoaded', function()
+        {
+            // your code here
+
+        });
+
+        var player;
+
+        function createPlayer(scene)
+        {
+            player = BABYLON.Mesh.CreateBox("Player", 1.0, scene);
+            player.position = new BABYLON.Vector3(-4, 15, 0);
+            player.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 1, restitution: 0 });
+        }
+
+
+    	var canvas = document.getElementById('renderCanvas');
+    	var engine = new BABYLON.Engine(canvas, true);
+
+        var createScene = function()
+        {
+            // create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
+
+            var gravityVector = new BABYLON.Vector3(0,-9.81, 0);
+            var physicsPlugin = new BABYLON.CannonJSPlugin();
+            scene.enablePhysics(gravityVector, physicsPlugin);
+
+            var camera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, -45), scene);
+
+            // create a basic light, aiming 0,1,0 - meaning, to the sky
+            var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
+
+        	// gradnja kocke
+
+            createPlayer(scene);
+
+
+            camera.target = player;
+            //camera.applyGravity = true;
+
+            // create a built-in "ground" shape; its constructor takes the same 5 params as the sphere's one
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
+
+
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 250, 0, 40, scene, false, function () {
+            ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
+            ground.material = groundMaterial;
+        });
+
+            //box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+
+
+
+        	window.addEventListener("keydown", function(evt)
+            {
+                switch(evt.keyCode)
+                {
+                    case 65:        player.rotation.y -= 0.05;    break;      //A
+                    case 87:        player.position.z += 0.05;    break;      //W
+                    case 68:        player.rotation.y += 0.05;    break;      //D
+                    case 83:        player.position.z -= 0.05;    break;      //S
+                }
+        	},false);
+
+            return scene;
+    }
+
+    var scene = createScene();
+    engine.runRenderLoop(function() {
+
+        scene.render();
+
+    });
+    window.addEventListener('resize', function() {
+        engine.resize();
+    });
+
+    </script>
+</body>
+</html>
