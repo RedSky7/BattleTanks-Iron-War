@@ -24,65 +24,103 @@
         var tank = [];
         var bots = [];
         var shoots = [];
+        var p1;
+        var ctx;
 
 
-        function createPlayer(scene)
+        function Player(mesh)
         {
-            //player = BABYLON.Mesh.CreateBox("Player", 1.0, scene);
-            for(i = 0; i < tank.length; i++)
+            this.player = mesh;
+            this.HP = 100;
+            this.power = 1;
+            this.speed = 1;
+
+            this.createPlayer=function(scene)
             {
-                tank[i].position = new BABYLON.Vector3(-4, 150, 0);
-                tank[i].setPhysicsState(BABYLON.PhysicsEngine.BoxImpostor, { mass: 10, friction: 0.01, restitution: 0 });
+                this.player.position = new BABYLON.Vector3(-20, 15, 10);
+                this.player.physicsImpostor = new BABYLON.PhysicsImpostor(this.player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 1000, friction: 0.01, restitution: 0 }, scene);
+                this.player.showBoundingBox = true;
             }
         }
+
 
         function createBots(number, scene)
         {
             for(i = 0; i < number; i++)
             {
-                bots.push(BABYLON.Mesh.CreateBox("Bot", 1.0, scene));
-                bots[bots.length - 1].position =  new BABYLON.Vector3(-5, 15, i);
-                bots[bots.length - 1].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 0.5, restitution: 0 });
+                bots.push(p1.player.clone());
+                bots[bots.length - 1].position =  new BABYLON.Vector3(-5*i, 20, 10*i-10);
+                bots[bots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(bots[bots.length - 1], BABYLON.PhysicsEngine.BoxImpostor, { mass: 1000, friction: 0.01, restitution: 0 }, scene);
             }
         }
 
         function shoot(scene, direction)
         {
             shoots.push(BABYLON.Mesh.CreateSphere("sphere", 10.0, 0.1, scene));
-            shoots[shoots.length - 1].position = new BABYLON.Vector3(tank[0].position.x, tank[0].position.y, tank[0].position.z - 0.1);
+            var predMano = new BABYLON.Vector3(p1.player.position.x, p1.player.position.y, p1.player.position.z - 10);
+            var left_global = BABYLON.Vector3.TransformCoordinates(predMano, p1.player.getWorldMatrix());
+            shoots[shoots.length - 1].position = left_global;
+
             shoots[shoots.length - 1].setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 1, restitution: 0 });
-            //shoots[shoots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(shoots[shoots.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+            shoots[shoots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(shoots[shoots.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
             shoots[shoots.length - 1].applyImpulse(direction, shoots[shoots.length - 1].position);
-            shoots[shoots.length - 1].setLinearVelocity.scaleEqual(0.9);
-        }
-
-        function changeCamera(scene, controlCamera)
-        {
-            scene.activeCamera = controlCamera;
+            //shoots[shoots.length - 1].setLinearVelocity.scaleEqual(0.9);
         }
 
 
-    	var canvas = document.getElementById('renderCanvas');
-    	var engine = new BABYLON.Engine(canvas, true);
+
+        var canvas = document.getElementById('renderCanvas');
+
+        var engine = new BABYLON.Engine(canvas, true);
+
+
+
 
         var createScene = function()
         {
-            // create a basic BJS Scene object
             var scene = new BABYLON.Scene(engine);
 
-            var gravityVector = new BABYLON.Vector3(0,-4.81, 0);
+
+
+            var gravityVector = new BABYLON.Vector3(0,-9.81, 0);
             var physicsPlugin = new BABYLON.CannonJSPlugin();
+
             scene.enablePhysics(gravityVector, physicsPlugin);
 
+            //canvas = document.getElementById('renderCanvas');
+
+            //label1Texture.drawText("text", 512, 512, "8pt Arial", "#40C040FF", "#40C040FF");
+            //label1Texture.update();
+
+            //var playgroundSize = 100;
+// Background
+
+
+
+
+
+
+        //backgroundTexture.drawText("Eternalcoding", null, 80, "bold 70px Segoe UI", "white", "#555555");
+        //backgroundTexture.drawText("- browsers statistics -", null, 250, "35px Segoe UI", "white", null);
+
+
+
+
             var controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 15, 45), scene);
-            var FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
 
-            scene.activeCamera = FPCamera;
+            controlCamera.setTarget(BABYLON.Vector3.Zero());
 
-            // create a basic light, aiming 0,1,0 - meaning, to the sky
+    // attach the camera to the canvas
+            //controlCamera.attachControl(canvas, false);
+            /*var FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(-40, 15, 50), scene);
+            FPCamera.radius = 30;
+            FPCamera.heightOffset = 10;
+            FPCamera.rotationOffset = 0;
+            */
+scene.activeCamera = controlCamera;
             var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
-            
-        	// gradnja kocke
+
+
             BABYLON.SceneLoader.ImportMesh("", "", "tank.obj", scene, function (meshes)
             {
                 tank = meshes;
@@ -107,66 +145,98 @@
                     tank[i].material = tankMaterials[i];
                 }
 
-                FPCamera.target = tank[0];
 
-                createPlayer(scene);
-            });
+                p1 = new Player(BABYLON.Mesh.MergeMeshes(tank));
+                //FPCamera.target = p1.player;
+                p1.createPlayer(scene);
 
-
-            //createBots(3, scene);
-            player = BABYLON.Mesh.CreateBox("Player", 1.0, scene);
-
-            //camera.applyGravity = true;
-
-            // create a built-in "ground" shape; its constructor takes the same 5 params as the sphere's one
-            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
-            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
+                createBots(3, scene);
 
 
-            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 50, 0, 40, scene, false, function ()
-            {
-                ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
-                ground.material = groundMaterial;
             });
 
             /*
+            var skybox = BABYLON.Mesh.CreateBox("skyBox", 400.0, scene);
+            var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("assets/skybox/skybox", scene);
+            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.disableLighting = true;
+            skybox.material = skyboxMaterial;
+            */
+
+
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
+
+            /*
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 50, 0, 40, scene, false, function ()
+            {
+                //ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
+                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0}, scene);
+                ground.material = groundMaterial;
+
+            });
+            */
+
+
             var ground = BABYLON.Mesh.CreateGround('ground1', 60, 60, 2, scene);
             ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
             ground.material = groundMaterial;
-            */
+
+
+
+            try
+            {
+                //alert("try");
+                for(j = 0; j < bots.length; j++)
+                {
+                    //alert("try");
+                    p1.player.physicsImpostor.registerOnPhysicsCollide(bots[j].physicsImpostor, function(main, collided)
+                    {
+                        main.object.showBoundingBox = false;
+                            //main.object.material.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+                            //var sphere = BABYLON.Mesh.CreateSphere("sphere1", 8, 2, scene);
+                            //sphere.position = player.position;
+
+                        p1.HP -= 10;
+                        alert(p1.HP);
+                        if(p1.HP < 0)
+                            p1.player.dispose();
+                    });
+                }
+            }
+            catch(e)
+            {}
+
 
         	window.addEventListener("keydown", function(evt)
             {
                 switch(evt.keyCode)
                 {
-                    case 65:
-
-                                    for(i = 0; i < tank.length; i++)
-                                    {
-                                        tank[i].rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
-                                    }
+                    case 65:        p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                    //A
                                     break;
 
-                    case 87:        //player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                    case 87:        p1.player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                    //W
 
-                                    tank[0].computeWorldMatrix();
-                                    var matrix = tank[0].getWorldMatrix();
-                                    var up_local = new BABYLON.Vector3(0, 0, -0.5);
-                                    var up_global = BABYLON.Vector3.TransformCoordinates(up_local, matrix);
+                                    //tank[0].updatePhysicsBodyPosition();
 
+                                    //var left_global = BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(0.0,0.0,1.0), player.getWorldMatrix());
+                                    //var tank_global = BABYLON.Vector3.TransformCoordinates(tank[0].position, tank[0].getWorldMatrix());
+                                    //for(i = 0; i < tank.length; i++)
+                                    //{
+                                    //player.applyImpulse(left_global, player.getAbsolutePosition());
+                                        //tank[0].moveWithCollisions(left_global);
 
-                                    for(i = 0; i < tank.length; i++)
-                                    {
-                                        tank[i].applyImpulse(up_global, tank[i].position);
-                                        //tank[i].moveWithCollisions(up_global);
-                                    }
                                     break;
 
 
-                    case 68:        for(i = 0; i < tank.length; i++)
-                                    {
-                                        tank[i].rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
-                                    }
+                    case 68:        p1.player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+
                                     break;
 
                     case 83:        /*
@@ -175,29 +245,82 @@
                                     player.applyImpulse(up_global, player.position);
                                     player.setLinearVelocity.scaleEqual(0.5);
                                     break;      //S     */
+
+                                    p1.player.translate(BABYLON.Axis.Z, 0.5, BABYLON.Space.LOCAL);
                                     break;
 
-                    case 32:        //var up_local = new BABYLON.Vector3(0, 0, -20);
+                    case 32:        var up_local = new BABYLON.Vector3(0, 0, -20);
                                     //var up_global = BABYLON.Vector3.TransformCoordinates(up_local, matrix);
-                                    //shoot(scene, up_global);
+                                    shoot(scene, up_local);
 
                                     break;      //SPACE
 
-                    case 86:        //changeCamera(scene, controlCamera);          break;      //V (VIEW)
+                    case 86:       // scene.activeCamera = controlCamera;       break;
+                                    start1();
+                                    break;//V (VIEW)
                 }
         	}, false);
 
+            /*
+            var backgroundTexture = new BABYLON.DynamicTexture("dynamic texture", {width:1024, height:512}, scene, true);
+            var context = backgroundTexture.getContext();
+            context.fillRect(10, 10, 55, 50);
+            backgroundTexture.update();
+            */
 
+
+            var d = 50;
+            var cubes = new Array();
+            for (var i = 0; i < 360; i += 20) {
+                var r = BABYLON.Tools.ToRadians(i);
+                var b = BABYLON.Mesh.CreateBox("Box #" + i / 20, 5, scene, false);
+                b.position.x = Math.cos(r) * d;
+                b.position.z = Math.sin(r) * d;
+                cubes.push(b);
+            }
+            var canvas = new BABYLON.ScreenSpaceCanvas2D(scene, {
+                id: "ScreenCanvas"
+            });
+            i = 0;
+            for (var _i = 0, cubes_1 = cubes; _i < cubes_1.length; _i++) {
+                var cube = cubes_1[_i];
+                new BABYLON.Group2D({
+                    parent: canvas, id: "GroupTag #" + i, width: 80, height: 40, trackNode: cube, origin: BABYLON.Vector2.Zero(),
+                    children: [
+                        new BABYLON.Rectangle2D({ id: "firstRect", width: 80, height: 26, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#808080FF", children: [
+                                new BABYLON.Text2D(cube.name, { marginAlignment: "h: center, v:center", fontName: "bold 12px Arial" })
+                            ]
+                        })
+                    ]
+                });
+                ++i;
+            }
 
             return scene;
     }
 
+    /*window.addEventListener("keydown", function(evt)
+    {
+        switch(evt.keyCode)
+        {
+            case 65:*/
+
+
+                        /*
+                        break;
+
+            default:    start1();
+        }
+    });*/
+
     var scene = createScene();
+
     engine.runRenderLoop(function() {
 
         scene.render();
 
     });
+
     window.addEventListener('resize', function() {
         engine.resize();
     });
