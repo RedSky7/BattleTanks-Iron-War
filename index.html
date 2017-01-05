@@ -33,6 +33,10 @@
 
         var gameActive = false;
 
+        var enemies = 3;
+
+        var level = 1;
+
 
 
         function Player(name, mesh)
@@ -40,12 +44,21 @@
             this.name = name;
             this.player = mesh;
 
-            this.hp = 100;
-            this.power = 1;
+                this.hp = 100;
+
+                this.cannonDamage = 5;
+
+                this.mineDamage = 0;
+
             this.speed = 0.008;
             this.gravity = 0.15;
 
             this.bullets = [];
+
+            this.mineLimit = 1;
+            this.mines = [];
+
+            this.upgrades = 2;
 
 
 
@@ -55,6 +68,7 @@
                 this.player.physicsImpostor = new BABYLON.PhysicsImpostor(this.player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
                 //this.player.showBoundingBox = true;
 
+
                 new BABYLON.Group2D(
                 {
                     parent: menuCanvas.children[3], id: "Player", width: 80, height: 40, trackNode: p1.player, origin: BABYLON.Vector2.Zero(),
@@ -62,29 +76,57 @@
                     [
                         new BABYLON.Rectangle2D(
                         {
-                            id: "firstPlayer", width: 80, height: 26, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#808080FF", children:
-                            [
-                                new BABYLON.Text2D("HP: "+p1.hp,
-                                {
-                                    marginAlignment: "h: center, v:center", fontName: "bold 12px Arial"
-                                })
-                            ]
+                            id: "firstPlayer", width: 60, height: 15, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
                         })
                     ]
                 });
+                menuCanvas.children[3].children[0].children[0].levelVisible = false;
+
             }
 
             this.shoot=function(scene)
             {
                 this.bullets.push(BABYLON.Mesh.CreateSphere("sphere", 10.0, 0.2, scene));
 
-                var rotz = p1.player.rotationQuaternion.toEulerAngles();
+                var rotz = this.player.rotationQuaternion.toEulerAngles();
                 var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / this.speed, rotz.x*10 +2, parseFloat(Math.cos(rotz.y)) / this.speed);
 
                 this.bullets[this.bullets.length - 1].position = new BABYLON.Vector3(this.player.position.x + (parseFloat(Math.sin(rotz.y)) / 0.2)*(-1), this.player.position.y + rotz.x*10 +2, this.player.position.z + (parseFloat(Math.cos(rotz.y)) / 0.2)*(-1));
 
                 this.bullets[this.bullets.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(this.bullets[this.bullets.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0 }, scene);
                 this.bullets[this.bullets.length - 1].applyImpulse(backwards.negate(), this.bullets[this.bullets.length - 1].position);
+            }
+
+            this.upgradePrimary=function()
+            {
+                this.cannonDamage += 5;
+            }
+
+            this.upgradeSecundary=function()
+            {
+                this.mineDamage += 5;
+            }
+
+            this.upgradeHealth=function()
+            {
+                this.hp += 10;
+            }
+
+            this.plant=function()
+            {
+                this.mines.push(mine.clone());
+
+                this.mines[this.mines.length -1].scaling = new BABYLON.Vector3(0.15, 0.15, 0.15);
+                this.mines[this.mines.length -1].rotate(BABYLON.Axis.X, 1, BABYLON.Space.LOCAL);
+
+
+                var rotz = this.player.rotationQuaternion.toEulerAngles();
+                var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / this.speed , rotz.x*10 +2, parseFloat(Math.cos(rotz.y)) / this.speed);
+
+                this.mines[this.mines.length - 1].position = new BABYLON.Vector3(this.player.position.x + (parseFloat(Math.sin(rotz.y)) / 0.15), this.player.position.y + rotz.x*10 +2 , this.player.position.z + (parseFloat(Math.cos(rotz.y)) / 0.15));
+
+                this.mines[this.mines.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(this.mines[this.mines.length - 1], BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, restitution: 0 }, scene);
+
             }
         }
 
@@ -124,52 +166,125 @@
                 }
 
 
+                for(j = 0; j < bots.length; j++)
+                {
+                    if(bots[j] == null)
+                        continue;
 
-                    /*
-                    globalnij = 0;
-                    p1.bullets[i].physicsImpostor.registerOnPhysicsCollide(bots[0].player.physicsImpostor, function(main, collided)
+                    if(p1.bullets[i].intersectsMesh(bots[j].player, true))
                     {
-                        alert(collided.object.hp);
-                        points++;
-                        collided.hp -= 1;
-
+                        bots[j].hp -= p1.cannonDamage;
+                        p1.bullets[i].dispose();
                         p1.bullets.splice(globalnii, 1);
+                        i--;
 
-                        targetHit = true;
-                    });
-                    */
-                    for(j = 0; j < bots.length; j++)
-                    {
-                        if(bots[j] == null)
-                            continue;
+                        var length = menuCanvas.children[3].children[j+1].children[0].width;
 
-                        if(p1.bullets[i].intersectsMesh(bots[j].player, true))
-                        {
-                            bots[j].hp -= 1;
-                            p1.bullets.splice(globalnii, 1);
-                            break;
-                        }
+                        if( length < 35 && length > 25 )
+                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
+                        else if(length < 25)
+                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
 
+                        menuCanvas.children[3].children[j+1].children[0].width -= 5;
 
                         if(bots[j].hp <= 0)
                         {
+                            menuCanvas.children[3].children[j+1].children[0].levelVisible = false;
                             bots[j].player.dispose();
                             bots[j] = null;
+                            enemies--;
                             //bots.splice(j, 1);
                             //j--;
                         }
 
+                        break;
                     }
 
 
 
+                }
+            }
+
+            for(i = 0; i < p1.mines.length; i++)
+            {
+                for(j = 0; j < bots.length; j++)
+                {
+                    if(bots[j] == null)
+                        continue;
+
+                    if(p1.mines[i].intersectsMesh(bots[j].player, true))
+                    {
+                        bots[j].hp -= p1.mineDamage;
+                        p1.mines[i].dispose();
+                        p1.mines.splice(i, 1);
+                        i--;
+
+                        var length = menuCanvas.children[3].children[j+1].children[0].width;
+
+                        if( length < 35 && length > 25 )
+                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
+                        else if(length < 25)
+                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
+
+                        menuCanvas.children[3].children[j+1].children[0].width -= 5;
+
+                        if(bots[j].hp <= 0)
+                        {
+                            menuCanvas.children[3].children[j+1].children[0].levelVisible = false;
+                            bots[j].player.dispose();
+                            bots[j] = null;
+                            enemies--;
+                            //bots.splice(j, 1);
+                            //j--;
+                        }
+
+                        break;
+                    }
+
+
+                }
+
+                if(p1.mines[i].intersectsMesh(p1.player, true))
+                {
+                    p1.hp -= p1.mineDamage;
+                    p1.mines[i].dispose();
+                    p1.mines.splice(i, 1);
+                    i--;
+
+                    var length = menuCanvas.children[3].children[0].children[0].width;
+
+                    if( length < 35 && length > 25 )
+                        menuCanvas.children[3].children[0].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
+                    else if(length < 25)
+                        menuCanvas.children[3].children[0].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
+
+                    menuCanvas.children[3].children[0].children[0].width -= 5;
+
+                    break;
+                }
+
+            }
+
+
+            if(upgrades2 != null && p1.player.intersectsMesh(upgrades2, true))
+            {
+                p1.upgrades++;
+                upgrades2.dispose();
             }
         }
 
+        var woodenBox;
+        var upgrades2;
+        function createUpgradeBox()
+        {
+            if(upgrades2 != null)
+                upgrades2.dispose();
+            upgrades2 = woodenBox.clone();
+            upgrades2.position = new BABYLON.Vector3(Math.floor(Math.random() * 200)-100, 15, Math.floor(Math.random() * 200)-100);
+            upgrades2.physicsImpostor = new BABYLON.PhysicsImpostor(upgrades2, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
+        }
 
-
-
-        function createBots(number, scene)
+        function createBots(scene)
         {
             for(i = 0; i < bots.length; i++)
             {
@@ -179,21 +294,17 @@
 
                 new BABYLON.Group2D(
                 {
-                    parent: menuCanvas.children[3], id: "Bot#" + i, width: 80, height: 40, trackNode: bots[i].player, origin: BABYLON.Vector2.Zero(),
+                    parent: menuCanvas.children[3], id: "Botd#" + i, width: 80, height: 40, trackNode: bots[i].player, origin: BABYLON.Vector2.Zero(),
                     children:
                     [
                         new BABYLON.Rectangle2D(
                         {
-                            id: "firstRect"+i, width: 80, height: 26, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#808080FF", children:
-                            [
-                                new BABYLON.Text2D("HP: "+bots[i].hp,
-                                {
-                                    marginAlignment: "h: center, v:center", fontName: "bold 12px Arial"
-                                })
-                            ]
+                            id: "firstRecto"+i, width: 60, height: 10, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
                         })
                     ]
                 });
+
+                menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
             }
 
         }
@@ -255,9 +366,10 @@
 
             var lol = new BABYLON.Texture("assets/enemies2.png", scene);
             var lol2 = new BABYLON.Texture("assets/score.png", scene);
+            var lvl = new BABYLON.Texture("assets/level.png", scene);
             lol2.hasAlpha = true;
             lol.hasAlpha = true;
-
+            lvl.hasAlpha = true;
 
             menuCanvas = new BABYLON.ScreenSpaceCanvas2D(scene,
             {
@@ -356,14 +468,32 @@
                                     {
                                         id: "mainRect", marginAlignment: "h: center, v:center"
                                     }),
-                                    new BABYLON.Text2D(bots.length+"  ",
+                                    new BABYLON.Text2D(enemies+"  ",
                                     {
                                         id: "text2",
-                                        marginAlignment: "h: right, v:center",
+                                        marginAlignment: "h: right, v: left",
                                         fontName: "20pt Arial"
                                     })
                                 ]
-                            })
+                            }),
+                            new BABYLON.Rectangle2D(
+                            {
+                                id: "mainRect3", x: engine.getRenderWidth()/2 - 140, y: engine.getRenderHeight()-60, width: 300, height: 80,
+                                children:
+                                [
+                                    new BABYLON.Sprite2D(lvl,
+                                    {
+                                        id: "mainRec3t", marginAlignment: "h: center, v:center"
+                                    }),
+                                    new BABYLON.Text2D("level  ",
+                                    {
+                                        id: "text23",
+                                        marginAlignment: "h: right, v: center",
+                                        fontName: "20pt Arial"
+                                    })
+                                ]
+                            }),
+
                         ]
                     }),
                     new BABYLON.Group2D(
@@ -388,9 +518,6 @@
         }
 
 
-
-        function setPlayArea()
-        {}
 
 
         function handleClick(event)
@@ -418,6 +545,19 @@
                     menuCanvas.children[0].levelVisible = false;
                     menuCanvas.children[1].levelVisible = true;
                     activeScreen = "upgrades";
+
+                    if(p1.upgrades > 0)
+                    {
+                        menuCanvas.children[1].children[5].levelVisible = true;
+                        menuCanvas.children[1].children[6].levelVisible = true;
+                        menuCanvas.children[1].children[7].levelVisible = true;
+                    }
+                    else
+                    {
+                        menuCanvas.children[1].children[5].levelVisible = false;
+                        menuCanvas.children[1].children[6].levelVisible = false;
+                        menuCanvas.children[1].children[7].levelVisible = false;
+                    }
                 }
             }
             else if(activeScreen == "upgrades")
@@ -427,6 +567,41 @@
                     menuCanvas.children[1].levelVisible = false;
                     menuCanvas.children[0].levelVisible = true;
                     activeScreen = "main";
+                }
+                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && p1.upgrades > 0)
+                {
+                    p1.upgrades--;
+                    p1.upgradePrimary();
+                }
+                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && p1.upgrades > 0)
+                {
+                    p1.upgrades--;
+                    p1.upgradeSecundary();
+                }
+                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && p1.upgrades > 0)
+                {
+                    p1.upgrades--;
+                    p1.upgradeHealth();
+                }
+                else
+                {
+                    menuCanvas.children[1].children[1].levelVisible = false;
+                    menuCanvas.children[1].children[2].levelVisible = false;
+                    menuCanvas.children[1].children[3].levelVisible = false;
+                    menuCanvas.children[1].children[4].levelVisible = false;
+                }
+
+                if(p1.upgrades > 0)
+                {
+                    menuCanvas.children[1].children[5].levelVisible = true;
+                    menuCanvas.children[1].children[6].levelVisible = true;
+                    menuCanvas.children[1].children[7].levelVisible = true;
+                }
+                else
+                {
+                    menuCanvas.children[1].children[5].levelVisible = false;
+                    menuCanvas.children[1].children[6].levelVisible = false;
+                    menuCanvas.children[1].children[7].levelVisible = false;
                 }
 
             }
@@ -464,15 +639,15 @@
                 {
                     menuCanvas.children[1].children[1].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 235 && y < 275)
+                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && p1.upgrades > 0)
                 {
                     menuCanvas.children[1].children[2].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 335 && y < 375)
+                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && p1.upgrades > 0)
                 {
                     menuCanvas.children[1].children[3].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 435 && y < 475)
+                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && p1.upgrades > 0)
                 {
                     menuCanvas.children[1].children[4].levelVisible = true;
                 }
@@ -483,11 +658,25 @@
                     menuCanvas.children[1].children[3].levelVisible = false;
                     menuCanvas.children[1].children[4].levelVisible = false;
                 }
+
+                if(p1.upgrades > 0)
+                {
+                    menuCanvas.children[1].children[5].levelVisible = true;
+                    menuCanvas.children[1].children[6].levelVisible = true;
+                    menuCanvas.children[1].children[7].levelVisible = true;
+                }
+                else
+                {
+                    menuCanvas.children[1].children[5].levelVisible = false;
+                    menuCanvas.children[1].children[6].levelVisible = false;
+                    menuCanvas.children[1].children[7].levelVisible = false;
+                }
             }
             return;
         }
 
         var menuCanvas;
+        var mine;
 
         var createScene = function()
         {
@@ -542,12 +731,47 @@
 
                 p1.createPlayer(scene);
 
-                createBots(3, scene);
+                createBots(scene);
 
 
             });
 
-            var controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 15, 45), scene);
+
+            BABYLON.SceneLoader.ImportMesh("", "", "box.obj", scene, function (meshes)
+            {
+                tank = meshes;
+
+                var tankMaterials = [];
+
+                tankMaterials[0] = new BABYLON.StandardMaterial("Mat0", scene);
+                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/box/WoodPlanks_Color.jpg", scene);
+
+                tank[0].material = tankMaterials[0];
+
+                woodenBox = BABYLON.Mesh.MergeMeshes(tank);
+
+            });
+
+            BABYLON.SceneLoader.ImportMesh("", "", "mine.obj", scene, function (meshes)
+            {
+                tank = meshes;
+
+                var tankMaterials = [];
+
+                tankMaterials[0] = new BABYLON.StandardMaterial("Mat2", scene);
+                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/player/mine.png", scene);
+
+                tank[0].material = tankMaterials[0];
+
+                mine = BABYLON.Mesh.MergeMeshes(tank);
+
+                mine.scaling(new BABYLON.Vector3(-100, 1, 1));
+                mine.rotate(BABYLON.Axis.Z, -0.05, BABYLON.Space.LOCAL);
+
+
+            });
+
+            var controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 150, 45), scene);
             controlCamera.setTarget(BABYLON.Vector3.Zero());
             //controlCamera.attachControl(canvas, false);
 
@@ -587,15 +811,11 @@
             });
 
 
-
             /*
             var ground = BABYLON.Mesh.CreateGround('ground1', 60, 60, 2, scene);
             ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
             ground.material = groundMaterial;
             */
-
-
-
 
             window.addEventListener("keydown", function(evt)
             {
@@ -606,8 +826,6 @@
                     switch(evt.keyCode)
                     {
                         case 65:        p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
-
-
                                         //p1.player.updatePhysicsBodyPosition();
                                         //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, -0.05, 0);
                                         //p1.player.rotation.y -= 0.1;
@@ -616,16 +834,10 @@
                                         break;
 
                         case 87:        p1.player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
-
-
                         //W
-
-
                                         /*
                                         var rotz = p1.player.rotationQuaternion.toEulerAngles();
                                         var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / p1.speed, p1.player.position.y, parseFloat(Math.cos(rotz.y)) / p1.speed);
-
-
                                         p1.player.applyImpulse(backwards.negate(), p1.player);
                                         */
                                         break;
@@ -674,52 +886,15 @@
                                                             break;
                                         }
                                         break;
+                        case 88:
+                                        if(p1.mines.length < p1.mineLimit)
+                                            p1.plant();
+                                        break;
                                         //V (VIEW)
                     }
                 }
 
             }, false);
-
-
-
-
-
-            /*
-            var backgroundTexture = new BABYLON.DynamicTexture("dynamic texture", {width:1024, height:512}, scene, true);
-            var context = backgroundTexture.getContext();
-            context.fillRect(10, 10, 55, 50);
-            backgroundTexture.update();
-            */
-
-            /*
-            var d = 50;
-            var cubes = new Array();
-            for (var i = 0; i < 360; i += 20) {
-                var r = BABYLON.Tools.ToRadians(i);
-                var b = BABYLON.Mesh.CreateBox("Box #" + i / 20, 5, scene, false);
-                b.position.x = Math.cos(r) * d;
-                b.position.z = Math.sin(r) * d;
-                cubes.push(b);
-            }
-            var canvas = new BABYLON.ScreenSpaceCanvas2D(scene, {
-                id: "ScreenCanvas"
-            });
-            i = 0;
-            for (var _i = 0, cubes_1 = cubes; _i < cubes_1.length; _i++) {
-                var cube = cubes_1[_i];
-                new BABYLON.Group2D({
-                    parent: canvas, id: "GroupTag #" + i, width: 80, height: 40, trackNode: cube, origin: BABYLON.Vector2.Zero(),
-                    children: [
-                        new BABYLON.Rectangle2D({ id: "firstRect", width: 80, height: 26, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#808080FF", children: [
-                                new BABYLON.Text2D(cube.name, { marginAlignment: "h: center, v:center", fontName: "bold 12px Arial" })
-                            ]
-                        })
-                    ]
-                });
-                ++i;
-            }*/
-
-
 
 
             create2D(scene);
@@ -738,16 +913,22 @@
             //move();
             check(scene);
             menuCanvas.children[2].children[0].children[1].text = points+"  ";
-            menuCanvas.children[2].children[1].children[1].text = bots.length+"  ";
+            menuCanvas.children[2].children[1].children[1].text = enemies+"  ";
 
-            menuCanvas.children[3].children[0].children[0].children[0].text = "HP: "+p1.hp;
-            for(i = 0; i < bots.length; i++)
+            //menuCanvas.children[3].children[0].children[0].children[0].text = "HP: "+p1.hp;
+            if(a == 0)
             {
-                menuCanvas.children[3].children[i+1].children[0].children[0].text = "HP: "+bots[i].hp;
+                menuCanvas.children[3].children[0].children[0].levelVisible = true;
+                menuCanvas.children[3].children[1].children[0].levelVisible = true;
+                menuCanvas.children[3].children[2].children[0].levelVisible = true;
+                menuCanvas.children[3].children[3].children[0].levelVisible = true;
+                a++;
             }
 
-
-
+            if(Math.floor((Math.random() * 128)) == 11)
+            {
+                createUpgradeBox();
+            }
 
         }
         scene.render();
