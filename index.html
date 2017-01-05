@@ -9,7 +9,7 @@
 
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
+    <canvas id="renderCanvas" onclick="handleClick(event)" onmousemove="handleMove(event)"></canvas>
 
 
     <script>
@@ -31,66 +31,138 @@
         var points = 0;
         var ground;
 
+        var gameActive = false;
 
-        function Player(mesh)
+
+
+        function Player(name, mesh)
         {
+            this.name = name;
             this.player = mesh;
-            this.HP = 100;
+
+            this.hp = 100;
             this.power = 1;
             this.speed = 0.008;
             this.gravity = 0.15;
 
             this.bullets = [];
 
+
+
             this.createPlayer=function(scene)
             {
-                this.player.position = new BABYLON.Vector3(-20, 15, 10);
-                this.player.physicsImpostor = new BABYLON.PhysicsImpostor(this.player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.51, restitution: 0 }, scene);
+                this.player.position = new BABYLON.Vector3(-20, 15, 50);
+                this.player.physicsImpostor = new BABYLON.PhysicsImpostor(this.player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
                 //this.player.showBoundingBox = true;
+
+                new BABYLON.Group2D(
+                {
+                    parent: menuCanvas.children[3], id: "Player", width: 80, height: 40, trackNode: p1.player, origin: BABYLON.Vector2.Zero(),
+                    children:
+                    [
+                        new BABYLON.Rectangle2D(
+                        {
+                            id: "firstPlayer", width: 80, height: 26, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#808080FF", children:
+                            [
+                                new BABYLON.Text2D("HP: "+p1.hp,
+                                {
+                                    marginAlignment: "h: center, v:center", fontName: "bold 12px Arial"
+                                })
+                            ]
+                        })
+                    ]
+                });
             }
 
             this.shoot=function(scene)
             {
-                this.bullets.push(BABYLON.Mesh.CreateSphere("sphere", 10.0, 0.1, scene));
+                this.bullets.push(BABYLON.Mesh.CreateSphere("sphere", 10.0, 0.2, scene));
 
                 var rotz = p1.player.rotationQuaternion.toEulerAngles();
-                var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / this.speed, 0, parseFloat(Math.cos(rotz.y)) / this.speed);
+                var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / this.speed, rotz.x*10 +2, parseFloat(Math.cos(rotz.y)) / this.speed);
 
-                this.bullets[this.bullets.length - 1].position = new BABYLON.Vector3(this.player.position.x, this.player.position.y + 4, this.player.position.z);
-                this.bullets[this.bullets.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(this.bullets[this.bullets.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0.9 }, scene);
+                this.bullets[this.bullets.length - 1].position = new BABYLON.Vector3(this.player.position.x + (parseFloat(Math.sin(rotz.y)) / 0.2)*(-1), this.player.position.y + rotz.x*10 +2, this.player.position.z + (parseFloat(Math.cos(rotz.y)) / 0.2)*(-1));
+
+                this.bullets[this.bullets.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(this.bullets[this.bullets.length - 1], BABYLON.PhysicsImpostor.SphereImpostor, { mass: 1, restitution: 0 }, scene);
                 this.bullets[this.bullets.length - 1].applyImpulse(backwards.negate(), this.bullets[this.bullets.length - 1].position);
             }
         }
 
+        var globalnii = 0;
+        var globalnij = 0;
+
+
+        var groundHit;
+        var targetHit;
+
         function check(scene)
         {
-            var groundHit = false;
+
+            groundHit = false;
+            targetHit = false;
+
+            if(p1 == null)
+                return;
+
             for(i = 0; i < p1.bullets.length; i++)
             {
+                globalnii = i;
                 p1.bullets[i].physicsImpostor.registerOnPhysicsCollide(ground.physicsImpostor, function(main, collided)
                 {
-                    alert("hitGround"+i);
-                    //p1.bullets[i] = null;
-                    p1.bullets.pop();
+                    if(p1.bullets.length == 0)
+                        return;
+
+                    p1.bullets.splice(globalnii, 1);
+
                     groundHit=true;
                     return;
                 });
                 if(groundHit)
-                    continue;
-
-                for(j = 0; j < bots.length; j++)
                 {
-                    p1.bullets[i].physicsImpostor.registerOnPhysicsCollide(bots[j].physicsImpostor, function(main, collided)
-                    {
-                        points++;
-
-                        //main.object.showBoundingBox = false;
-                        p1.HP -= 10;
-                        alert(p1.HP);
-                        p1.bullets.pop();
-                        //p1.bullets[i] = null;
-                    });
+                    i--;
+                    continue;
                 }
+
+
+
+                    /*
+                    globalnij = 0;
+                    p1.bullets[i].physicsImpostor.registerOnPhysicsCollide(bots[0].player.physicsImpostor, function(main, collided)
+                    {
+                        alert(collided.object.hp);
+                        points++;
+                        collided.hp -= 1;
+
+                        p1.bullets.splice(globalnii, 1);
+
+                        targetHit = true;
+                    });
+                    */
+                    for(j = 0; j < bots.length; j++)
+                    {
+                        if(bots[j] == null)
+                            continue;
+
+                        if(p1.bullets[i].intersectsMesh(bots[j].player, true))
+                        {
+                            bots[j].hp -= 1;
+                            p1.bullets.splice(globalnii, 1);
+                            break;
+                        }
+
+
+                        if(bots[j].hp <= 0)
+                        {
+                            bots[j].player.dispose();
+                            bots[j] = null;
+                            //bots.splice(j, 1);
+                            //j--;
+                        }
+
+                    }
+
+
+
             }
         }
 
@@ -99,11 +171,65 @@
 
         function createBots(number, scene)
         {
-            for(i = 0; i < number; i++)
+            for(i = 0; i < bots.length; i++)
             {
-                bots.push(p1.player.clone());
-                bots[bots.length - 1].position =  new BABYLON.Vector3(-5*i, 20, 10*i-10);
-                bots[bots.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(bots[bots.length - 1], BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.51, restitution: 0 }, scene);
+                //bots[bots.length - 1].player.setAbsolutePosition(new BABYLON.Vector3(-20 * i , 20, 15));
+                bots[i].player.position =  new BABYLON.Vector3(-20 * i , 20, 15);
+                bots[i].player.physicsImpostor = new BABYLON.PhysicsImpostor(bots[i].player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
+
+                new BABYLON.Group2D(
+                {
+                    parent: menuCanvas.children[3], id: "Bot#" + i, width: 80, height: 40, trackNode: bots[i].player, origin: BABYLON.Vector2.Zero(),
+                    children:
+                    [
+                        new BABYLON.Rectangle2D(
+                        {
+                            id: "firstRect"+i, width: 80, height: 26, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#808080FF", children:
+                            [
+                                new BABYLON.Text2D("HP: "+bots[i].hp,
+                                {
+                                    marginAlignment: "h: center, v:center", fontName: "bold 12px Arial"
+                                })
+                            ]
+                        })
+                    ]
+                });
+            }
+
+        }
+
+        var tempL = 15;
+        var tempD = 14;
+        function move()
+        {
+            for(i = 0; i < bots.length; i++)
+            {
+
+
+                if(Math.floor((Math.random() * 1280)) == 11)
+                    tempL = 15;
+
+                else if (Math.floor((Math.random() * 1280)) == 10)
+                    tempD = 14;
+
+                if(tempL > 0)
+                {
+                    bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                    tempL--;
+                }
+                else if(tempD > 0)
+                {
+                    bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                    tempD--;
+                }
+                else
+                {
+                    bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                }
+
+
+                if(Math.floor((Math.random() * 1280)) < 100)
+                    bots[i].shoot(scene);
             }
         }
 
@@ -111,16 +237,272 @@
         var canvas = document.getElementById('renderCanvas');
         var engine = new BABYLON.Engine(canvas, true);
 
+
+        var activeScreen = "main";
+
+
+
+        function create2D(scene)
+        {
+
+            var mainWindow = new BABYLON.Texture("assets/mainMenu.png", scene);
+            mainWindow.hasAlpha = true;
+
+            var upgradeWindow = new BABYLON.Texture("assets/upgradeMenu.png", scene);
+            var upgradeButton = new BABYLON.Texture("assets/upgradeButton.png", scene);
+            upgradeWindow.hasAlpha = true;
+            upgradeButton.hasAlpha = true;
+
+            var lol = new BABYLON.Texture("assets/enemies2.png", scene);
+            var lol2 = new BABYLON.Texture("assets/score.png", scene);
+            lol2.hasAlpha = true;
+            lol.hasAlpha = true;
+
+
+            menuCanvas = new BABYLON.ScreenSpaceCanvas2D(scene,
+            {
+                id: "ScreenCanvas",
+                size: new BABYLON.Size(engine.getRenderWidth(), engine.getRenderHeight()),
+                backgroundFill: "#50505055",
+                children:
+                [
+                    new BABYLON.Group2D(
+                    {
+                        id: "GroupTag #", children:
+                        [
+                            new BABYLON.Sprite2D(mainWindow,
+                            {
+                                id: "mainWindow", marginAlignment: "h: center, v:center"
+                            }),
+                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 370), new BABYLON.Vector2(1240, 370)], {
+                                id: "play",
+                                border: "#FFFFFFFF", borderThickness: 2
+                            }),
+                            new BABYLON.Lines2D([new BABYLON.Vector2(440, 285), new BABYLON.Vector2(760, 285)], {
+                                id: "upgrades",
+                                border: "#98181fFF", borderThickness: 2
+                            })
+                        ]
+                    }),
+                    new BABYLON.Group2D(
+                    {
+                        id: "GroupTag #", children:
+                        [
+                            new BABYLON.Sprite2D(upgradeWindow,
+                            {
+                                id: "mainRect", marginAlignment: "h: center, v:center"
+                            }),
+
+                            new BABYLON.Lines2D([new BABYLON.Vector2(460, 620), new BABYLON.Vector2(520, 620)], {
+                                id: "back",
+                                border: "#FFFFFFFF", borderThickness: 2
+                            }),
+
+                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 473), new BABYLON.Vector2(1210, 473)], {
+                                id: "upgrade1",
+                                border: "#98181fFF", borderThickness: 2
+                            }),
+                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 373), new BABYLON.Vector2(1210, 373)], {
+                                id: "upgrade2",
+                                border: "#98181fFF", borderThickness: 2
+                            }),
+                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 273), new BABYLON.Vector2(1210, 273)], {
+                                id: "upgrade3",
+                                border: "#98181fFF", borderThickness: 2
+                            }),
+
+                            new BABYLON.Sprite2D(upgradeButton,
+                            {
+                                id: "mainRect1", x: 1080, y: 485
+                            }),
+                            new BABYLON.Sprite2D(upgradeButton,
+                            {
+                                id: "mainRect2", x: 1080, y: 385
+                            }),
+                            new BABYLON.Sprite2D(upgradeButton,
+                            {
+                                id: "mainRect3", x: 1080, y: 285
+                            })
+                        ]
+                    }),
+                    new BABYLON.Group2D(
+                    {
+                        id: "nekaj",
+                        children:
+                        [
+                            new BABYLON.Rectangle2D(
+                            {
+                                id: "mainRect", x: 0, y: 0, width: 300, height: 80,
+                                children:
+                                [
+                                    new BABYLON.Sprite2D(lol2,
+                                    {
+                                        id: "mainRect2", x: 0, y: 0,
+                                    }),
+                                    new BABYLON.Text2D(points+"  ",
+                                    {
+                                        id: "text",
+                                        marginAlignment: "h: right, v:center",
+                                        fontName: "20pt Arial"
+                                    })
+                                ]
+                            }),
+                            new BABYLON.Rectangle2D(
+                            {
+                                id: "mainRect2", x: 0, y: engine.getRenderHeight()-60, width: 300, height: 80,
+                                children:
+                                [
+                                    new BABYLON.Sprite2D(lol,
+                                    {
+                                        id: "mainRect", marginAlignment: "h: center, v:center"
+                                    }),
+                                    new BABYLON.Text2D(bots.length+"  ",
+                                    {
+                                        id: "text2",
+                                        marginAlignment: "h: right, v:center",
+                                        fontName: "20pt Arial"
+                                    })
+                                ]
+                            })
+                        ]
+                    }),
+                    new BABYLON.Group2D(
+                    {
+                        id: "nekaj"
+                    })
+                ]
+            });
+
+            menuCanvas.children[0].children[1].levelVisible = false;
+            menuCanvas.children[0].children[2].levelVisible = false;
+
+            menuCanvas.children[1].levelVisible = false;
+            menuCanvas.children[1].children[1].levelVisible = false;
+            menuCanvas.children[1].children[2].levelVisible = false;
+            menuCanvas.children[1].children[3].levelVisible = false;
+            menuCanvas.children[1].children[4].levelVisible = false;
+
+            menuCanvas.children[2].levelVisible = false;
+
+            activeScreen = "main";
+        }
+
+
+
+        function setPlayArea()
+        {}
+
+
+        function handleClick(event)
+        {
+            if(gameActive)
+                return;
+
+            var x = event.clientX -22;
+            var y = event.clientY -155;
+
+            if(activeScreen == "main")
+            {
+                if(x > 1040 && y < 400 && y > 300 && x < 1220 )
+                {
+                    gameActive = true;
+                    //changed = true;
+                    activeScreen = "play";
+
+                    menuCanvas.children[0].levelVisible = false;
+                    menuCanvas.children[1].levelVisible = false;
+                    menuCanvas.children[2].levelVisible = true;
+                }
+                else if(x > 440 && y < 500 && y > 400 && x < 760 )
+                {
+                    menuCanvas.children[0].levelVisible = false;
+                    menuCanvas.children[1].levelVisible = true;
+                    activeScreen = "upgrades";
+                }
+            }
+            else if(activeScreen == "upgrades")
+            {
+                if(x > 440 && y < 140 && y > 70 && x < 510 )
+                {
+                    menuCanvas.children[1].levelVisible = false;
+                    menuCanvas.children[0].levelVisible = true;
+                    activeScreen = "main";
+                }
+
+            }
+
+        }
+
+        function handleMove(event)
+        {
+            if(gameActive)
+                return;
+
+
+            var x = event.clientX -22;
+            var y = event.clientY -155;
+
+            if(activeScreen == "main")
+            {
+                if(x > 1040 && y < 400 && y > 300 && x < 1220 )
+                {
+                    menuCanvas.children[0].children[1].levelVisible = true;
+                }
+                else if(x > 440 && y < 500 && y > 400 && x < 760 )
+                {
+                    menuCanvas.children[0].children[2].levelVisible = true;
+                }
+                else
+                {
+                    menuCanvas.children[0].children[1].levelVisible = false;
+                    menuCanvas.children[0].children[2].levelVisible = false;
+                }
+            }
+            else if(activeScreen == "upgrades")
+            {
+                if(x > 440 && y < 140 && y > 70 && x < 510 )
+                {
+                    menuCanvas.children[1].children[1].levelVisible = true;
+                }
+                else if(x > 1080 && x < 1210 && y > 235 && y < 275)
+                {
+                    menuCanvas.children[1].children[2].levelVisible = true;
+                }
+                else if(x > 1080 && x < 1210 && y > 335 && y < 375)
+                {
+                    menuCanvas.children[1].children[3].levelVisible = true;
+                }
+                else if(x > 1080 && x < 1210 && y > 435 && y < 475)
+                {
+                    menuCanvas.children[1].children[4].levelVisible = true;
+                }
+                else
+                {
+                    menuCanvas.children[1].children[1].levelVisible = false;
+                    menuCanvas.children[1].children[2].levelVisible = false;
+                    menuCanvas.children[1].children[3].levelVisible = false;
+                    menuCanvas.children[1].children[4].levelVisible = false;
+                }
+            }
+            return;
+        }
+
+        var menuCanvas;
+
         var createScene = function()
         {
             var scene = new BABYLON.Scene(engine);
+
+
+
+                //var l = new BABYLON.Layer("la", "assets/test2.jpg", scene,{scale: new BABYLON.Vector2(640, 480), offset: new BABYLON.Vector2(640, 480)});
+                //l.render();
+
 
             var gravityVector = new BABYLON.Vector3(0,-9.81, 0);
             var physicsPlugin = new BABYLON.CannonJSPlugin();
 
             scene.enablePhysics(gravityVector, physicsPlugin);
-
-
 
             var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
 
@@ -150,13 +532,17 @@
                 }
 
 
-                p1 = new Player(BABYLON.Mesh.MergeMeshes(tank));
+                p1 = new Player("player", BABYLON.Mesh.MergeMeshes(tank));
+                bots.push(new Player("bot 0", p1.player.clone()));
+                bots.push(new Player("bot 1", p1.player.clone()));
+                bots.push(new Player("bot 2", p1.player.clone()));
+
                 FPCamera.lockedTarget = p1.player;
+                scene.activeCamera = FPCamera;
 
                 p1.createPlayer(scene);
 
                 createBots(3, scene);
-
 
 
             });
@@ -170,7 +556,10 @@
             FPCamera.heightOffset = 10; //10
             FPCamera.rotationOffset = 0;
 
-            scene.activeCamera = FPCamera;
+            //controlCamera.attachControl(canvas, false);
+            //scene.activeCamera = controlCamera;
+
+
             //scene.activeCamera = controlCamera;
 
 
@@ -208,89 +597,92 @@
 
 
 
-
-
-
-
-        	window.addEventListener("keydown", function(evt)
+            window.addEventListener("keydown", function(evt)
             {
-                canvas.children[0].text = "Score: " + points;
-                switch(evt.keyCode)
+
+                if(gameActive)
                 {
-                    case 65:        p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+
+                    switch(evt.keyCode)
+                    {
+                        case 65:        p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
 
 
-                                    //p1.player.updatePhysicsBodyPosition();
-                                    //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, -0.05, 0);
-                                    //p1.player.rotation.y -= 0.1;
+                                        //p1.player.updatePhysicsBodyPosition();
+                                        //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, -0.05, 0);
+                                        //p1.player.rotation.y -= 0.1;
 
-                    //A
-                                    break;
+                        //A
+                                        break;
 
-                    case 87:        p1.player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
-
-
-                    //W
+                        case 87:        p1.player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
 
 
-                                    /*
-                                    var rotz = p1.player.rotationQuaternion.toEulerAngles();
-                                    var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / p1.speed, p1.player.position.y, parseFloat(Math.cos(rotz.y)) / p1.speed);
+                        //W
 
 
-                                    p1.player.applyImpulse(backwards.negate(), p1.player);
-                                    */
-                                    break;
+                                        /*
+                                        var rotz = p1.player.rotationQuaternion.toEulerAngles();
+                                        var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / p1.speed, p1.player.position.y, parseFloat(Math.cos(rotz.y)) / p1.speed);
 
 
-                    case 68:
-                                    //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, 0.05, 0);
-                                    p1.player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
-                                    //p1.player.rotation.y += 0.1;
-                                    //p1.player.rotation = new BABYLON.Vector3(0, 1, 0);
-                                    break;
-
-                    case 83:        /*
-                                    var up_local = new BABYLON.Vector3(0, 0, 0.5);
-                                    var up_global = BABYLON.Vector3.TransformCoordinates(up_local, matrix);
-                                    player.applyImpulse(up_global, player.position);
-                                    player.setLinearVelocity.scaleEqual(0.5);
-                                    break;      //S     */
-
-                                    p1.player.translate(BABYLON.Axis.Z, 0.5, BABYLON.Space.LOCAL);
-                                    break;
-
-                    case 32:        p1.shoot(scene);
+                                        p1.player.applyImpulse(backwards.negate(), p1.player);
+                                        */
+                                        break;
 
 
-                                    break;      //SPACE
+                        case 68:
+                                        //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, 0.05, 0);
+                                        p1.player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                                        //p1.player.rotation.y += 0.1;
+                                        //p1.player.rotation = new BABYLON.Vector3(0, 1, 0);
+                                        break;
 
-                    case 86:
-                                    cam = ++cam % 3;
-                                    switch(cam)
-                                    {
-                                            case 0:     scene.activeCamera = FPCamera;
-                                                        FPCamera.lockedTarget = p1.player;
-                                                        FPCamera.radius = 30;
-                                                        FPCamera.heightOffset = 10;
-                                                        break;
+                        case 83:        /*
+                                        var up_local = new BABYLON.Vector3(0, 0, 0.5);
+                                        var up_global = BABYLON.Vector3.TransformCoordinates(up_local, matrix);
+                                        player.applyImpulse(up_global, player.position);
+                                        player.setLinearVelocity.scaleEqual(0.5);
+                                        break;      //S     */
 
-                                            case 1:     scene.activeCamera = FPCamera;
-                                                        FPCamera.lockedTarget = p1.player;
-                                                        FPCamera.radius = 30;
-                                                        FPCamera.heightOffset = 80;
-                                                        break;
+                                        p1.player.translate(BABYLON.Axis.Z, 0.5, BABYLON.Space.LOCAL);
+                                        break;
 
-                                            case 2:     scene.activeCamera = controlCamera;
-                                                        //controlCamera.attachControl(canvas, false);
-                                                        break;
-                                    }
+                        case 32:        p1.shoot(scene);
 
 
+                                        break;      //SPACE
 
-                                    break;//V (VIEW)
+                        case 86:
+                                        cam = ++cam % 3;
+                                        switch(cam)
+                                        {
+                                                case 0:     scene.activeCamera = FPCamera;
+                                                            FPCamera.lockedTarget = p1.player;
+                                                            FPCamera.radius = 30;
+                                                            FPCamera.heightOffset = 10;
+                                                            break;
+
+                                                case 1:     scene.activeCamera = FPCamera;
+                                                            FPCamera.lockedTarget = p1.player;
+                                                            FPCamera.radius = 30;
+                                                            FPCamera.heightOffset = 80;
+                                                            break;
+
+                                                case 2:     scene.activeCamera = controlCamera;
+                                                            //controlCamera.attachControl(canvas, false);
+                                                            break;
+                                        }
+                                        break;
+                                        //V (VIEW)
+                    }
                 }
-        	}, false);
+
+            }, false);
+
+
+
+
 
             /*
             var backgroundTexture = new BABYLON.DynamicTexture("dynamic texture", {width:1024, height:512}, scene, true);
@@ -330,51 +722,38 @@
 
 
 
-            var canvas = new BABYLON.ScreenSpaceCanvas2D(scene,
-            {
-                id: "ScreenCanvas",
-                size: new BABYLON.Size(300, 80),
-                backgroundFill: "#4040408F",
-                //backgroundRoundRadius: 50,
-                children: [ new BABYLON.Text2D("Score "+points,
-                {
-                    id: "text",
-                    marginAlignment: "h: center, v:center",
-                    fontName: "20pt Arial",
-                })]
-            });
-
-
-
-        /*
-        var buttonRect = new BABYLON.Rectangle2D(
-        {
-            parent: canvas,
-            id: "button",
-            x: 100,
-            y: 100,
-            width: 200,
-            height: 80,
-            fill: "#40C040FF",
-            roundRadius: 10,
-            children:
-            [
-                new BABYLON.Text2D("Click Me!", { fontName: "30pt Arial", marginAlignment: "h: center, v: center" })
-            ]
-        });
-        */
+            create2D(scene);
 
             return scene;
+
     }
 
+
     var scene = createScene();
-    engine.runRenderLoop(function() {
-        if(scene.isReady())
+    var a = 0;
+    engine.runRenderLoop(function()
+    {
+        if(gameActive && scene.isReady())
+        {
+            //move();
             check(scene);
+            menuCanvas.children[2].children[0].children[1].text = points+"  ";
+            menuCanvas.children[2].children[1].children[1].text = bots.length+"  ";
+
+            menuCanvas.children[3].children[0].children[0].children[0].text = "HP: "+p1.hp;
+            for(i = 0; i < bots.length; i++)
+            {
+                menuCanvas.children[3].children[i+1].children[0].children[0].text = "HP: "+bots[i].hp;
+            }
+
+
+
+
+        }
         scene.render();
-
-
     });
+
+
 
     window.addEventListener('resize', function() {
         engine.resize();
