@@ -43,6 +43,8 @@
 
         var keys = [];
 
+        var FPCamera, controlCamera;
+
 
         function change()
         {
@@ -109,27 +111,7 @@
                 }
 
                 //V- VIEW
-                if(keys[86])
-                {
-                    cam = ++cam % 3;
-                    switch(cam)
-                    {
-                            case 0:     scene.activeCamera = FPCamera;
-                                        FPCamera.lockedTarget = p1.player;
-                                        FPCamera.radius = 30;
-                                        FPCamera.heightOffset = 10;
-                                        break;
 
-                            case 1:     scene.activeCamera = FPCamera;
-                                        FPCamera.lockedTarget = p1.player;
-                                        FPCamera.radius = 30;
-                                        FPCamera.heightOffset = 80;
-                                        break;
-
-                            case 2:     scene.activeCamera = controlCamera;
-                                        break;
-                    }
-                }
                 //X- MINE
                 if(keys[88] && p1.mines.length < p1.mineLimit)
                     p1.plant(scene);
@@ -1104,11 +1086,37 @@
 
             });
 
-            var controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 150, 45), scene);
+
+            var spriteManagerTrees = new BABYLON.SpriteManager("treesManager", "assets/tree1.png", 20, 600, scene);
+            var spriteManagerTrees3 = new BABYLON.SpriteManager("treesManager", "assets/tree3.png", 20, 1083, scene);
+
+
+            for (i = 0; i < 20; i++)
+            {
+                var tree = new BABYLON.Sprite("tree", spriteManagerTrees);
+                tree.position.x = Math.random() * 195 - 100;
+                tree.position.z = Math.random() * 195 - 100;
+                tree.position.y = 15;
+                tree.width = 10;
+                tree.height = 10;
+            }
+            for (i = 0; i < 20; i++)
+            {
+                var tree = new BABYLON.Sprite("tree", spriteManagerTrees3);
+                tree.position.x = Math.random() * 195 - 100;
+                tree.position.z = Math.random() * 195 - 100;
+                tree.position.y = 15;
+                tree.width = 10;
+                tree.height = 10;
+            }
+
+
+
+            controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 150, 45), scene);
             controlCamera.setTarget(BABYLON.Vector3.Zero());
 
 
-            var FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
+            FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
             FPCamera.radius = 30;
             FPCamera.heightOffset = 10;
             FPCamera.rotationOffset = 0;
@@ -1129,10 +1137,10 @@
 
 
             var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
-            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/mesh.png", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/gravel3.jpg", scene);
 
 
-            ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/mesh.png", 200, 200, 50, 0, 40, scene, false, function ()
+            ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/Heightmap.png", 200, 200, 50, 0, 40, scene, false, function ()
             {
                 ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0}, scene);
                 ground.material = groundMaterial;
@@ -1149,6 +1157,28 @@
             window.addEventListener("keydown", function(evt)
             {
                 keys[evt.keyCode] = true;
+
+                if(keys[86])
+                {
+                    cam = ++cam % 3;
+                    switch(cam)
+                    {
+                            case 0:     scene.activeCamera = FPCamera;
+                                        FPCamera.lockedTarget = p1.player;
+                                        FPCamera.radius = 30;
+                                        FPCamera.heightOffset = 10;
+                                        break;
+
+                            case 1:     scene.activeCamera = FPCamera;
+                                        FPCamera.lockedTarget = p1.player;
+                                        FPCamera.radius = 30;
+                                        FPCamera.heightOffset = 80;
+                                        break;
+
+                            case 2:     scene.activeCamera = controlCamera;
+                                        break;
+                    }
+                }
             }, false);
 
             window.addEventListener("keyup", function(evt)
