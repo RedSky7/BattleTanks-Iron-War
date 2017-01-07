@@ -70,20 +70,7 @@
             scene = createScene();
         }
 
-        function setUpLevel1()
-        {
-            enemies = 3;
-            var temp = p1.player.clone();
-            bots = [];
-            bots.push(new Player("bot 1", temp.clone()));
-            bots.push(new Player("bot 2", temp.clone()));
-            bots.push(new Player("bot 3", temp.clone()));
 
-            bots[0].mineLimit = 3;
-            bots[1].mineLimit = 2;
-            bots[2].mineLimit = 3;
-
-        }
 
         function handleKeys()
         {
@@ -119,19 +106,46 @@
             }
         }
 
+        function setUpLevel1()
+        {
+            enemies = 3;
+            var temp = p1.player.clone();
+            bots = [];
+            bots.push(new Player("bot 1", temp.clone()));
+            bots.push(new Player("bot 2", temp.clone()));
+            bots.push(new Player("bot 3", temp.clone()));
+
+            bots[0].mineLimit = 3;
+            bots[1].mineLimit = 2;
+            bots[2].mineLimit = 3;
+
+        }
+
         function setUpLevel2()
         {
             enemies = 5;
 
             bots.push(new Player("bot 0", p1.player.clone()));
+            bots[bots.length - 1].cannonDamage = 10;
             bots.push(new Player("bot 1", p1.player.clone()));
             bots.push(new Player("bot 2", p1.player.clone()));
             bots.push(new Player("bot 3", p1.player.clone()));
+            bots[bots.length - 1].cannonDamage = 10;
             bots.push(new Player("bot 4", p1.player.clone()));
         }
 
         function setUpLevel3()
         {
+            enemies = 5;
+
+            bots.push(new Player("bot 0", p1.player.clone()));
+            bots[bots.length - 1].cannonDamage = 10;
+            bots.push(new Player("bot 1", p1.player.clone()));
+            bots.push(new Player("bot 2", p1.player.clone()));
+            bots.push(new Player("bot 3", p1.player.clone()));
+            bots[bots.length - 1].mineDamage = 50;
+            bots.push(new Player("bot 4", p1.player.clone()));
+            bots[bots.length - 1].cannonDamage = 30;
             return;
         }
 
