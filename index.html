@@ -83,7 +83,7 @@
 
         function handleKeys()
         {
-            if(gameActive)
+            if(gameActive && p1.player != null)
             {
 
                 if(keys[65])
@@ -184,7 +184,7 @@
 
             this.createPlayer=function(scene)
             {
-                this.player.position = new BABYLON.Vector3(-20, 15, 50);
+                this.player.position = new BABYLON.Vector3(-20, 25, 30);
                 this.player.physicsImpostor = new BABYLON.PhysicsImpostor(this.player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
 
                 new BABYLON.Group2D(
@@ -238,6 +238,7 @@
             this.upgradeSecundary=function()
             {
                 this.mineDamage += 5;
+                this.mineLimit++;
                 menuCanvas.children[1].children[8].text = this.mineDamage+" ";
             }
 
@@ -248,7 +249,6 @@
                 menuCanvas.children[1].children[8].text = this.hp+" ";
             }
         }
-
 
 
         var groundHit;
@@ -268,6 +268,7 @@
             else if(object.player.position.z < -90)
                 object.player.position.z = -80;
         }
+
 
         function checkForHit(parent, weapon, wIndex, collided, cIndex, weaponType)
         {
@@ -313,6 +314,14 @@
 
             for(i = 0; i < p1.bullets.length; i++)
             {
+                if(p1.bullets[i].position.x > 90 || p1.bullets[i].position.x < -90 || p1.bullets[i].position.z > 90 || p1.bullets[i].position.z < -90)
+                {
+                    p1.bullets[i].dispose();
+                    p1.bullets.splice(i, 1);
+                    i--;
+                    break;
+                }
+
                 p1.bullets[i].physicsImpostor.registerOnPhysicsCollide(ground.physicsImpostor, function(main, collided)
                 {
                     if(groundHit)
@@ -378,6 +387,14 @@
 
                 for(j = 0; j < bots[i].bullets.length; j++)
                 {
+                    if(bots[i].bullets[j].position.x > 90 || bots[i].bullets[j].position.x < -90 || bots[i].bullets[j].position.z > 90 || bots[i].bullets[j].position.z < -90)
+                    {
+                        bots[i].bullets[j].dispose();
+                        bots[i].bullets.splice(j, 1);
+                        j--;
+                        break;
+                    }
+
                     if(bots[i].bullets[j].intersectsMesh(p1.player, true))
                     {
                         p1.hp -= bots[i].cannonDamage;
@@ -1036,6 +1053,8 @@
                 }
 
 
+
+
                 p1 = new Player("player", BABYLON.Mesh.MergeMeshes(tank));
 
                 switch(level)
@@ -1051,6 +1070,7 @@
                 p1.createPlayer(scene);
 
                 createBots(scene);
+
 
             });
 
@@ -1158,7 +1178,8 @@
         {
             move();
             check(scene);
-            handleKeys();
+            if(!levelUp)
+                handleKeys();
             if(gameActive && !levelUp)
             {
                 menuCanvas.children[2].children[0].children[1].text = points+"  ";
