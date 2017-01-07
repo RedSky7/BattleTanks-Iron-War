@@ -23,9 +23,7 @@
         //var player;
         var tank = [];
         var bots = [];
-        var shoots = [];
-        var p1;
-        var ctx;
+        var p1 = new Player("player", " k");
         var cam = 0;
 
         var points = 0;
@@ -36,8 +34,71 @@
         var enemies = 3;
 
         var level = 1;
+        var levelUp = false;
+
+        var upgrades = 0;
+
+        var canShoot = false;
+        var canShootFun = setInterval(change, 400);
 
 
+        function change()
+        {
+            canShoot = true;
+        }
+
+        function resetScene(caseLevelUp)
+        {
+
+            if(!caseLevelUp)
+            {
+                level = 1;
+                points = 0;
+            }
+
+            a = 0;
+            tank = [];
+            bots = [];
+            p1 = new Player("player", " k");
+            cam = 0;
+            scene = createScene();
+        }
+
+        function setUpLevel1()
+        {
+            enemies = 3;
+            var temp = p1.player.clone();
+            bots = [];
+            bots.push(new Player("bot 1", temp.clone()));
+            bots.push(new Player("bot 2", temp.clone()));
+            bots.push(new Player("bot 3", temp.clone()));
+
+            bots[0].mineLimit = 3;
+            bots[1].mineLimit = 2;
+            bots[2].mineLimit = 3;
+
+        }
+
+        function setUpLevel2()
+        {
+            enemies = 5;
+
+            bots.push(new Player("bot 0", p1.player.clone()));
+            bots.push(new Player("bot 1", p1.player.clone()));
+            bots.push(new Player("bot 2", p1.player.clone()));
+            bots.push(new Player("bot 3", p1.player.clone()));
+            bots.push(new Player("bot 4", p1.player.clone()));
+        }
+
+        function setUpLevel3()
+        {
+            return;
+        }
+
+        function setUpLevel4()
+        {
+            return;
+        }
 
         function Player(name, mesh)
         {
@@ -45,10 +106,11 @@
             this.player = mesh;
 
                 this.hp = 100;
+                this.maxHP = 100;
 
                 this.cannonDamage = 5;
 
-                this.mineDamage = 0;
+                this.mineDamage = 5;
 
             this.speed = 0.008;
             this.gravity = 0.15;
@@ -58,16 +120,15 @@
             this.mineLimit = 1;
             this.mines = [];
 
-            this.upgrades = 2;
-
+            this.tempL = 10;
+            this.tempD = 10;
+            this.override = 0;
 
 
             this.createPlayer=function(scene)
             {
                 this.player.position = new BABYLON.Vector3(-20, 15, 50);
                 this.player.physicsImpostor = new BABYLON.PhysicsImpostor(this.player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
-                //this.player.showBoundingBox = true;
-
 
                 new BABYLON.Group2D(
                 {
@@ -76,12 +137,11 @@
                     [
                         new BABYLON.Rectangle2D(
                         {
-                            id: "firstPlayer", width: 60, height: 15, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
+                            id: "firstPlayer", width: 60, height: 15, x: -30, y: 50, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
                         })
                     ]
                 });
                 menuCanvas.children[3].children[0].children[0].levelVisible = false;
-
             }
 
             this.shoot=function(scene)
@@ -97,111 +157,128 @@
                 this.bullets[this.bullets.length - 1].applyImpulse(backwards.negate(), this.bullets[this.bullets.length - 1].position);
             }
 
-            this.upgradePrimary=function()
-            {
-                this.cannonDamage += 5;
-            }
-
-            this.upgradeSecundary=function()
-            {
-                this.mineDamage += 5;
-            }
-
-            this.upgradeHealth=function()
-            {
-                this.hp += 10;
-            }
-
-            this.plant=function()
+            this.plant=function(scene)
             {
                 this.mines.push(mine.clone());
 
                 this.mines[this.mines.length -1].scaling = new BABYLON.Vector3(0.15, 0.15, 0.15);
                 this.mines[this.mines.length -1].rotate(BABYLON.Axis.X, 1, BABYLON.Space.LOCAL);
 
-
                 var rotz = this.player.rotationQuaternion.toEulerAngles();
                 var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / this.speed , rotz.x*10 +2, parseFloat(Math.cos(rotz.y)) / this.speed);
 
                 this.mines[this.mines.length - 1].position = new BABYLON.Vector3(this.player.position.x + (parseFloat(Math.sin(rotz.y)) / 0.15), this.player.position.y + rotz.x*10 +2 , this.player.position.z + (parseFloat(Math.cos(rotz.y)) / 0.15));
-
                 this.mines[this.mines.length - 1].physicsImpostor = new BABYLON.PhysicsImpostor(this.mines[this.mines.length - 1], BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, restitution: 0 }, scene);
+            }
 
+
+            this.upgradePrimary=function()
+            {
+                this.cannonDamage += 5;
+                menuCanvas.children[1].children[8].text = this.cannonDamage+" ";
+            }
+
+            this.upgradeSecundary=function()
+            {
+                this.mineDamage += 5;
+                menuCanvas.children[1].children[8].text = this.mineDamage+" ";
+            }
+
+            this.upgradeHealth=function()
+            {
+                this.hp += 10;
+                this.maxHP += 10;
+                menuCanvas.children[1].children[8].text = this.hp+" ";
             }
         }
 
-        var globalnii = 0;
-        var globalnij = 0;
 
 
         var groundHit;
-        var targetHit;
+        var rem = [];
+
+        function checkForFall(object)
+        {
+            if(object == null)
+                return;
+
+            if(object.player.position.x > 90)
+                object.player.position.x = 80;
+            else if(object.player.position.x < -90)
+                object.player.position.x = -80;
+            if(object.player.position.z > 90)
+                object.player.position.z = 80;
+            else if(object.player.position.z < -90)
+                object.player.position.z = -80;
+        }
+
+        function checkForHit(parent, weapon, wIndex, collided, cIndex, weaponType)
+        {
+            if(bots[j] == null)
+                return false;
+
+            if(weapon[wIndex].intersectsMesh(collided[cIndex].player, true))
+            {
+                switch(weaponType)
+                {
+                    case "cannonDamage":    collided[cIndex].hp -= parent.cannonDamage; break;
+                    case "mineDamage":      collided[cIndex].hp -= parent.mineDamage;   break;
+                }
+
+                points++;
+                weapon[wIndex].dispose();
+                weapon.splice(wIndex, 1);
+
+                var length = menuCanvas.children[3].children[cIndex+1].children[0].width;
+
+                if( length < 35 && length > 25 )
+                    menuCanvas.children[3].children[cIndex+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
+                else if(length < 25)
+                    menuCanvas.children[3].children[cIndex+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
+
+                menuCanvas.children[3].children[cIndex+1].children[0].width = Math.floor(60 * (collided[cIndex].hp / 100));
+
+                return true;
+            }
+            return false
+        }
+
 
         function check(scene)
         {
 
-            groundHit = false;
-            targetHit = false;
+            checkForFall(p1);
+            for(i = 0; i < bots.length; i++)
+                checkForFall(bots[i]);
 
-            if(p1 == null)
-                return;
+
+            groundHit = false;
 
             for(i = 0; i < p1.bullets.length; i++)
             {
-                globalnii = i;
                 p1.bullets[i].physicsImpostor.registerOnPhysicsCollide(ground.physicsImpostor, function(main, collided)
                 {
-                    if(p1.bullets.length == 0)
+                    if(groundHit)
                         return;
 
-                    p1.bullets.splice(globalnii, 1);
+                    for(j = 0; j < p1.bullets.length; j++)
+                        if(main.object == p1.bullets[j])
+                        {
+                             rem.push(j);
+                        }
 
                     groundHit=true;
                     return;
                 });
-                if(groundHit)
-                {
-                    i--;
-                    continue;
-                }
 
 
                 for(j = 0; j < bots.length; j++)
                 {
-                    if(bots[j] == null)
-                        continue;
-
-                    if(p1.bullets[i].intersectsMesh(bots[j].player, true))
+                    if(checkForHit(p1, p1.bullets, i, bots, j, "cannonDamage"))
                     {
-                        bots[j].hp -= p1.cannonDamage;
-                        p1.bullets[i].dispose();
-                        p1.bullets.splice(globalnii, 1);
                         i--;
-
-                        var length = menuCanvas.children[3].children[j+1].children[0].width;
-
-                        if( length < 35 && length > 25 )
-                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
-                        else if(length < 25)
-                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
-
-                        menuCanvas.children[3].children[j+1].children[0].width -= 5;
-
-                        if(bots[j].hp <= 0)
-                        {
-                            menuCanvas.children[3].children[j+1].children[0].levelVisible = false;
-                            bots[j].player.dispose();
-                            bots[j] = null;
-                            enemies--;
-                            //bots.splice(j, 1);
-                            //j--;
-                        }
-
                         break;
                     }
-
-
-
                 }
             }
 
@@ -209,44 +286,18 @@
             {
                 for(j = 0; j < bots.length; j++)
                 {
-                    if(bots[j] == null)
-                        continue;
-
-                    if(p1.mines[i].intersectsMesh(bots[j].player, true))
+                    if(checkForHit(p1, p1.mines, i, bots, j, "mineDamage"))
                     {
-                        bots[j].hp -= p1.mineDamage;
-                        p1.mines[i].dispose();
-                        p1.mines.splice(i, 1);
                         i--;
-
-                        var length = menuCanvas.children[3].children[j+1].children[0].width;
-
-                        if( length < 35 && length > 25 )
-                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
-                        else if(length < 25)
-                            menuCanvas.children[3].children[j+1].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
-
-                        menuCanvas.children[3].children[j+1].children[0].width -= 5;
-
-                        if(bots[j].hp <= 0)
-                        {
-                            menuCanvas.children[3].children[j+1].children[0].levelVisible = false;
-                            bots[j].player.dispose();
-                            bots[j] = null;
-                            enemies--;
-                            //bots.splice(j, 1);
-                            //j--;
-                        }
-
                         break;
                     }
-
-
                 }
 
                 if(p1.mines[i].intersectsMesh(p1.player, true))
                 {
                     p1.hp -= p1.mineDamage;
+                    points -= 20;
+
                     p1.mines[i].dispose();
                     p1.mines.splice(i, 1);
                     i--;
@@ -258,37 +309,114 @@
                     else if(length < 25)
                         menuCanvas.children[3].children[0].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
 
-                    menuCanvas.children[3].children[0].children[0].width -= 5;
+                    menuCanvas.children[3].children[0].children[0].width = Math.floor(60 * (p1.hp / p1.maxHP));
 
                     break;
                 }
-
             }
 
-
-            if(upgrades2 != null && p1.player.intersectsMesh(upgrades2, true))
+            for(i = 0; i < bots.length; i++)
             {
-                p1.upgrades++;
-                upgrades2.dispose();
+                if(bots[i] == null)
+                    continue;
+
+                for(j = 0; j < bots[i].bullets.length; j++)
+                {
+                    if(bots[i].bullets[j].intersectsMesh(p1.player, true))
+                    {
+                        p1.hp -= bots[i].cannonDamage;
+
+                        bots[i].bullets[j].dispose();
+                        bots[i].bullets.splice(j, 1);
+                        j--;
+
+                        var length = menuCanvas.children[3].children[0].children[0].width;
+
+                        if( length < 35 && length > 25 )
+                            menuCanvas.children[3].children[0].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.9,0.5,0.1,0.8));
+                        else if(length < 25)
+                            menuCanvas.children[3].children[0].children[0].fill = new BABYLON.SolidColorBrush2D(new BABYLON.Color4(0.8,0,0,0.8));
+
+                        menuCanvas.children[3].children[0].children[0].width = Math.floor(60 * (p1.hp / p1.maxHP));
+
+                        break;
+                    }
+                }
             }
+
+
+
+            if(p1.player.rotationQuaternion.x > 0.8 || p1.player.rotationQuaternion.z > 0.4  || p1.hp <= 0)
+            {
+                menuCanvas.children[3].children[0].children[0].levelVisible = false;
+                p1.player.dispose();
+                activeScreen = "gameOver";
+                gameActive = false;
+                levelUp = false;
+                menuCanvas.children[4].levelVisible = true;
+                return;
+            }
+
+
+            if(upgradeBox != null && p1.player.intersectsMesh(upgradeBox, true))
+            {
+                upgrades++;
+                upgradeBox.dispose();
+                upgradeBox = null;
+            }
+
+
+            if(enemies == 0)
+            {
+                level++;
+                levelUp = true;
+                activeScreen = "play";
+                resetScene(true);
+            }
+
+            /*
+            if(rem.length > 0)
+            {
+                while(rem.length > 0)
+                {
+                    var temp = rem.pop();
+                    p1.bullets[temp].dispose();
+                    p1.bullets.splice(rem[temp], 1);
+                }
+            }*/
+
+
+            for(i = 0; i < bots.length; i++)
+            {
+                if(bots[i] == null)
+                    continue;
+                if(bots[i].hp <= 0)
+                {
+                    menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
+                    bots[i].player.dispose();
+                    bots[i] = null;
+                    enemies--;
+                }
+            }
+
         }
 
         var woodenBox;
-        var upgrades2;
+        var upgradeBox;
+
         function createUpgradeBox()
         {
-            if(upgrades2 != null)
-                upgrades2.dispose();
-            upgrades2 = woodenBox.clone();
-            upgrades2.position = new BABYLON.Vector3(Math.floor(Math.random() * 200)-100, 15, Math.floor(Math.random() * 200)-100);
-            upgrades2.physicsImpostor = new BABYLON.PhysicsImpostor(upgrades2, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
+            if(upgradeBox != null)
+                upgradeBox.dispose();
+            upgradeBox = woodenBox.clone();
+            upgradeBox.position = new BABYLON.Vector3(Math.floor(Math.random() * 200)-100, 15, Math.floor(Math.random() * 200)-100);
+            upgradeBox.physicsImpostor = new BABYLON.PhysicsImpostor(upgradeBox, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
         }
 
         function createBots(scene)
         {
             for(i = 0; i < bots.length; i++)
             {
-                //bots[bots.length - 1].player.setAbsolutePosition(new BABYLON.Vector3(-20 * i , 20, 15));
                 bots[i].player.position =  new BABYLON.Vector3(-20 * i , 20, 15);
                 bots[i].player.physicsImpostor = new BABYLON.PhysicsImpostor(bots[i].player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
 
@@ -299,48 +427,84 @@
                     [
                         new BABYLON.Rectangle2D(
                         {
-                            id: "firstRecto"+i, width: 60, height: 10, x: 0, y: 0, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
+                            id: "firstRecto"+i, width: 60, height: 10, x: -30, y: 50, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
                         })
                     ]
                 });
 
                 menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
             }
-
         }
 
-        var tempL = 15;
-        var tempD = 14;
+
         function move()
         {
             for(i = 0; i < bots.length; i++)
             {
+                if(bots[i] == null)
+                    continue;
 
-
-                if(Math.floor((Math.random() * 1280)) == 11)
-                    tempL = 15;
-
-                else if (Math.floor((Math.random() * 1280)) == 10)
-                    tempD = 14;
-
-                if(tempL > 0)
+                if(bots[i].override == 0 && (bots[i].player.position.x > 70 || bots[i].player.position.x < -70 || bots[i].player.position.z > 70 || bots[i].player.position.z < -70))
                 {
-                    bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
-                    tempL--;
+                    if(Math.floor((Math.random() * 2)) == 0)
+                        bots[i].tempD = 9;
+                    else
+                        bots[i].tempD = 7;
+                    bots[i].override = 10;
                 }
-                else if(tempD > 0)
+
+                if(bots[i].override == 0)
                 {
-                    bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
-                    tempD--;
+                    if(Math.floor((Math.random() * 128)) == 11 && bots[i].tempL < 3)
+                        bots[i].tempL = 25;
+
+                    else if (Math.floor((Math.random() * 128)) == 10 && bots[i].tempD < 3)
+                        bots[i].tempD = 24;
+
+                    if(bots[i].tempL > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempL--;
+                    }
+                    else if(bots[i].tempD > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempD--;
+                    }
+                    else
+                    {
+                        bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+
+                    }
                 }
-                else
+
+
+
+                if(bots[i].override > 0)
                 {
-                    bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                    if(bots[i].tempL > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempL--;
+                    }
+                    else if(bots[i].tempD > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempD--;
+                    }
+                    else
+                    {
+                        bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                        bots[i].override--;
+                    }
                 }
 
 
                 if(Math.floor((Math.random() * 1280)) < 100)
                     bots[i].shoot(scene);
+
+                if(Math.floor((Math.random() * 1280)) == 100)
+                    bots[i].plant(scene);
             }
         }
 
@@ -350,8 +514,6 @@
 
 
         var activeScreen = "main";
-
-
 
         function create2D(scene)
         {
@@ -371,6 +533,9 @@
             lol.hasAlpha = true;
             lvl.hasAlpha = true;
 
+            var gameOverWindow = new BABYLON.Texture("assets/gameOver.png", scene);
+            gameOverWindow.hasAlpha = true;
+
             menuCanvas = new BABYLON.ScreenSpaceCanvas2D(scene,
             {
                 id: "ScreenCanvas",
@@ -378,6 +543,7 @@
                 backgroundFill: "#50505055",
                 children:
                 [
+                    //MainMenu
                     new BABYLON.Group2D(
                     {
                         id: "GroupTag #", children:
@@ -396,6 +562,7 @@
                             })
                         ]
                     }),
+                    //UpgradeMenu
                     new BABYLON.Group2D(
                     {
                         id: "GroupTag #", children:
@@ -434,9 +601,28 @@
                             new BABYLON.Sprite2D(upgradeButton,
                             {
                                 id: "mainRect3", x: 1080, y: 285
+                            }),
+
+
+                            new BABYLON.Text2D(p1.cannonDamage+"  ",
+                            {
+                                id: "text34", x: 880, y: 473,
+                                fontName: "20pt Arial"
+                            }),
+                            new BABYLON.Text2D(p1.mineDamage+"  ",
+                            {
+                                id: "text35", x: 880, y: 373,
+                                fontName: "20pt Arial"
+                            }),
+                            new BABYLON.Text2D(p1.hp+"  ",
+                            {
+                                id: "text36", x: 880, y: 273,
+                                fontName: "20pt Arial"
                             })
                         ]
                     }),
+
+                    //PlayMenu
                     new BABYLON.Group2D(
                     {
                         id: "nekaj",
@@ -485,7 +671,7 @@
                                     {
                                         id: "mainRec3t", marginAlignment: "h: center, v:center"
                                     }),
-                                    new BABYLON.Text2D("level  ",
+                                    new BABYLON.Text2D(level+" ",
                                     {
                                         id: "text23",
                                         marginAlignment: "h: right, v: center",
@@ -496,12 +682,33 @@
 
                         ]
                     }),
+
+                    //HP
                     new BABYLON.Group2D(
                     {
                         id: "nekaj"
+                    }),
+
+                    //GameOverMenu
+                    new BABYLON.Group2D(
+                    {
+                        id: "nekaj",
+                        children:
+                        [
+                            new BABYLON.Sprite2D(gameOverWindow,
+                            {
+                                id: "mainRec3t", marginAlignment: "h: center, v:center"
+                            }),
+                            new BABYLON.Lines2D([new BABYLON.Vector2(440, 285), new BABYLON.Vector2(620, 285)], {
+                                id: "upgrade3",
+                                border: "#98181fFF", borderThickness: 2
+                            })
+                        ]
                     })
+
                 ]
             });
+
 
             menuCanvas.children[0].children[1].levelVisible = false;
             menuCanvas.children[0].children[2].levelVisible = false;
@@ -512,9 +719,17 @@
             menuCanvas.children[1].children[3].levelVisible = false;
             menuCanvas.children[1].children[4].levelVisible = false;
 
-            menuCanvas.children[2].levelVisible = false;
+            if(levelUp)
+                menuCanvas.children[2].levelVisible = true;
+            else
+                menuCanvas.children[2].levelVisible = false;
 
-            activeScreen = "main";
+            menuCanvas.children[4].levelVisible = false;
+            menuCanvas.children[4].children[1].levelVisible = false;
+            if(levelUp)
+                menuCanvas.children[0].levelVisible = false;
+            else
+                activeScreen = "main";
         }
 
 
@@ -546,7 +761,7 @@
                     menuCanvas.children[1].levelVisible = true;
                     activeScreen = "upgrades";
 
-                    if(p1.upgrades > 0)
+                    if(upgrades > 0)
                     {
                         menuCanvas.children[1].children[5].levelVisible = true;
                         menuCanvas.children[1].children[6].levelVisible = true;
@@ -568,19 +783,19 @@
                     menuCanvas.children[0].levelVisible = true;
                     activeScreen = "main";
                 }
-                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && p1.upgrades > 0)
+                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && upgrades > 0)
                 {
-                    p1.upgrades--;
+                    upgrades--;
                     p1.upgradePrimary();
                 }
-                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && p1.upgrades > 0)
+                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && upgrades > 0)
                 {
-                    p1.upgrades--;
-                    p1.upgradeSecundary();
+                    upgrades--;
+                    upgradesecundary();
                 }
-                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && p1.upgrades > 0)
+                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && upgrades > 0)
                 {
-                    p1.upgrades--;
+                    upgrades--;
                     p1.upgradeHealth();
                 }
                 else
@@ -591,7 +806,7 @@
                     menuCanvas.children[1].children[4].levelVisible = false;
                 }
 
-                if(p1.upgrades > 0)
+                if(upgrades > 0)
                 {
                     menuCanvas.children[1].children[5].levelVisible = true;
                     menuCanvas.children[1].children[6].levelVisible = true;
@@ -604,6 +819,20 @@
                     menuCanvas.children[1].children[7].levelVisible = false;
                 }
 
+            }
+            else if(activeScreen == "gameOver")
+            {
+                if(x > 440 && y < 500 && y > 400 && x < 760  )
+                {
+                    menuCanvas.children[4].levelVisible = false;
+                    menuCanvas.children[0].levelVisible = true;
+                    activeScreen = "main";
+                    resetScene(false);
+                }
+                else
+                {
+                    //menuCanvas.children[4].children[1].levelVisible = false;
+                }
             }
 
         }
@@ -639,15 +868,15 @@
                 {
                     menuCanvas.children[1].children[1].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && p1.upgrades > 0)
+                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && upgrades > 0)
                 {
                     menuCanvas.children[1].children[2].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && p1.upgrades > 0)
+                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && upgrades > 0)
                 {
                     menuCanvas.children[1].children[3].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && p1.upgrades > 0)
+                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && upgrades > 0)
                 {
                     menuCanvas.children[1].children[4].levelVisible = true;
                 }
@@ -659,7 +888,7 @@
                     menuCanvas.children[1].children[4].levelVisible = false;
                 }
 
-                if(p1.upgrades > 0)
+                if(upgrades > 0)
                 {
                     menuCanvas.children[1].children[5].levelVisible = true;
                     menuCanvas.children[1].children[6].levelVisible = true;
@@ -672,6 +901,17 @@
                     menuCanvas.children[1].children[7].levelVisible = false;
                 }
             }
+            else if(activeScreen == "gameOver")
+            {
+                if(x > 440 && y < 500 && y > 400 && x < 760 )
+                {
+                    menuCanvas.children[4].children[1].levelVisible = true;
+                }
+                else
+                {
+                    menuCanvas.children[4].children[1].levelVisible = false;
+                }
+            }
             return;
         }
 
@@ -682,12 +922,6 @@
         {
             var scene = new BABYLON.Scene(engine);
 
-
-
-                //var l = new BABYLON.Layer("la", "assets/test2.jpg", scene,{scale: new BABYLON.Vector2(640, 480), offset: new BABYLON.Vector2(640, 480)});
-                //l.render();
-
-
             var gravityVector = new BABYLON.Vector3(0,-9.81, 0);
             var physicsPlugin = new BABYLON.CannonJSPlugin();
 
@@ -695,6 +929,7 @@
 
             var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
 
+            create2D(scene);
 
             BABYLON.SceneLoader.ImportMesh("", "", "tank.obj", scene, function (meshes)
             {
@@ -722,9 +957,13 @@
 
 
                 p1 = new Player("player", BABYLON.Mesh.MergeMeshes(tank));
-                bots.push(new Player("bot 0", p1.player.clone()));
-                bots.push(new Player("bot 1", p1.player.clone()));
-                bots.push(new Player("bot 2", p1.player.clone()));
+
+                switch(level)
+                {
+                    case 1:     setUpLevel1(); break;
+                    case 2:     setUpLevel2(); break;
+                    default:    setUpLevel2(); break;
+                }
 
                 FPCamera.lockedTarget = p1.player;
                 scene.activeCamera = FPCamera;
@@ -733,23 +972,17 @@
 
                 createBots(scene);
 
-
             });
 
 
             BABYLON.SceneLoader.ImportMesh("", "", "box.obj", scene, function (meshes)
             {
-                tank = meshes;
+                var material = new BABYLON.StandardMaterial("Mat0", scene);
+                material.diffuseTexture = new BABYLON.Texture("assets/box/WoodPlanks_Color.jpg", scene);
 
-                var tankMaterials = [];
+                meshes[0].material = material;
 
-                tankMaterials[0] = new BABYLON.StandardMaterial("Mat0", scene);
-                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/box/WoodPlanks_Color.jpg", scene);
-
-                tank[0].material = tankMaterials[0];
-
-                woodenBox = BABYLON.Mesh.MergeMeshes(tank);
-
+                woodenBox = meshes[0];
             });
 
             BABYLON.SceneLoader.ImportMesh("", "", "mine.obj", scene, function (meshes)
@@ -773,21 +1006,16 @@
 
             var controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 150, 45), scene);
             controlCamera.setTarget(BABYLON.Vector3.Zero());
-            //controlCamera.attachControl(canvas, false);
+
 
             var FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
             FPCamera.radius = 30;
-            FPCamera.heightOffset = 10; //10
+            FPCamera.heightOffset = 10;
             FPCamera.rotationOffset = 0;
 
-            //controlCamera.attachControl(canvas, false);
-            //scene.activeCamera = controlCamera;
 
 
-            //scene.activeCamera = controlCamera;
-
-
-            var skybox = BABYLON.Mesh.CreateBox("skyBox", 400.0, scene);
+            var skybox = BABYLON.Mesh.CreateBox("skyBox", 400.0, scene);            //400
             var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
             skyboxMaterial.backFaceCulling = false;
             skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("assets/skybox/skybox", scene);
@@ -796,6 +1024,7 @@
             skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
             skyboxMaterial.disableLighting = true;
             skybox.material = skyboxMaterial;
+
 
 
 
@@ -819,54 +1048,29 @@
 
             window.addEventListener("keydown", function(evt)
             {
-
                 if(gameActive)
                 {
-
                     switch(evt.keyCode)
                     {
-                        case 65:        p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
-                                        //p1.player.updatePhysicsBodyPosition();
-                                        //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, -0.05, 0);
-                                        //p1.player.rotation.y -= 0.1;
-
                         //A
+                        case 65:        p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
                                         break;
-
-                        case 87:        p1.player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
                         //W
-                                        /*
-                                        var rotz = p1.player.rotationQuaternion.toEulerAngles();
-                                        var backwards = new BABYLON.Vector3(parseFloat(Math.sin(rotz.y)) / p1.speed, p1.player.position.y, parseFloat(Math.cos(rotz.y)) / p1.speed);
-                                        p1.player.applyImpulse(backwards.negate(), p1.player);
-                                        */
+                        case 87:        p1.player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
                                         break;
-
-
-                        case 68:
-                                        //p1.player.rotationQuaternion = BABYLON.Quaternion.RotationYawPitchRoll(0, 0.05, 0);
-                                        p1.player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
-                                        //p1.player.rotation.y += 0.1;
-                                        //p1.player.rotation = new BABYLON.Vector3(0, 1, 0);
+                        //D
+                        case 68:        p1.player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
                                         break;
-
-                        case 83:        /*
-                                        var up_local = new BABYLON.Vector3(0, 0, 0.5);
-                                        var up_global = BABYLON.Vector3.TransformCoordinates(up_local, matrix);
-                                        player.applyImpulse(up_global, player.position);
-                                        player.setLinearVelocity.scaleEqual(0.5);
-                                        break;      //S     */
-
-                                        p1.player.translate(BABYLON.Axis.Z, 0.5, BABYLON.Space.LOCAL);
+                        //S
+                        case 83:        p1.player.translate(BABYLON.Axis.Z, 0.5, BABYLON.Space.LOCAL);
                                         break;
-
-                        case 32:        p1.shoot(scene);
-
-
-                                        break;      //SPACE
-
-                        case 86:
-                                        cam = ++cam % 3;
+                        //SPACE
+                        case 32:        if(canShoot)
+                                            p1.shoot(scene);
+                                        canShoot = false;
+                                        break;
+                        //V- VIEW
+                        case 86:        cam = ++cam % 3;
                                         switch(cam)
                                         {
                                                 case 0:     scene.activeCamera = FPCamera;
@@ -882,22 +1086,23 @@
                                                             break;
 
                                                 case 2:     scene.activeCamera = controlCamera;
-                                                            //controlCamera.attachControl(canvas, false);
                                                             break;
                                         }
                                         break;
-                        case 88:
-                                        if(p1.mines.length < p1.mineLimit)
-                                            p1.plant();
+                        //X- MINE
+                        case 88:        if(p1.mines.length < p1.mineLimit)
+                                            p1.plant(scene);
                                         break;
-                                        //V (VIEW)
                     }
                 }
-
             }, false);
 
 
-            create2D(scene);
+
+            if(levelUp)
+            {
+                gameActive = true;
+            }
 
             return scene;
 
@@ -910,26 +1115,30 @@
     {
         if(gameActive && scene.isReady())
         {
-            //move();
+            move();
             check(scene);
-            menuCanvas.children[2].children[0].children[1].text = points+"  ";
-            menuCanvas.children[2].children[1].children[1].text = enemies+"  ";
-
-            //menuCanvas.children[3].children[0].children[0].children[0].text = "HP: "+p1.hp;
-            if(a == 0)
+            if(gameActive && !levelUp)
             {
-                menuCanvas.children[3].children[0].children[0].levelVisible = true;
-                menuCanvas.children[3].children[1].children[0].levelVisible = true;
-                menuCanvas.children[3].children[2].children[0].levelVisible = true;
-                menuCanvas.children[3].children[3].children[0].levelVisible = true;
-                a++;
-            }
+                menuCanvas.children[2].children[0].children[1].text = points+"  ";
+                menuCanvas.children[2].children[1].children[1].text = enemies+"  ";
 
-            if(Math.floor((Math.random() * 128)) == 11)
-            {
-                createUpgradeBox();
-            }
+                //menuCanvas.children[3].children[0].children[0].children[0].text = "HP: "+p1.hp;
+                if(a == 0)
+                {
+                    for(i = 0; i <= bots.length; i++)
+                    {
+                        menuCanvas.children[3].children[i].children[0].levelVisible = true;
+                    }
 
+                    a++;
+                }
+
+                if(Math.floor((Math.random() * 128)) == 11)
+                {
+                    createUpgradeBox();
+                }
+            }
+            levelUp = false;
         }
         scene.render();
     });
