@@ -36,7 +36,7 @@
         var level = 1;
         var levelUp = false;
 
-        var upgrades = 0;
+        var upgrades = 1;
 
         var canShoot = false;
         var canShootFun = setInterval(change, 400);
@@ -44,6 +44,8 @@
         var keys = [];
 
         var FPCamera, controlCamera;
+
+
 
 
         function change()
@@ -113,8 +115,7 @@
                 //V- VIEW
 
                 //X- MINE
-                if(keys[88] && p1.mines.length < p1.mineLimit)
-                    p1.plant(scene);
+
             }
         }
 
@@ -217,18 +218,18 @@
                 menuCanvas.children[1].children[8].text = this.cannonDamage+" ";
             }
 
-            this.upgradeSecundary=function()
+            this.upgradeSecondary=function()
             {
                 this.mineDamage += 5;
                 this.mineLimit++;
-                menuCanvas.children[1].children[8].text = this.mineDamage+" ";
+                menuCanvas.children[1].children[9].text = this.mineDamage+" ";
             }
 
             this.upgradeHealth=function()
             {
                 this.hp += 10;
                 this.maxHP += 10;
-                menuCanvas.children[1].children[8].text = this.hp+" ";
+                menuCanvas.children[1].children[10].text = this.hp+" ";
             }
         }
 
@@ -615,6 +616,10 @@
             var gameOverWindow = new BABYLON.Texture("assets/gameOver.png", scene);
             gameOverWindow.hasAlpha = true;
 
+            var middleX = engine.getRenderWidth() / 2;
+            var middleY = engine.getRenderHeight() / 2;
+
+
             menuCanvas = new BABYLON.ScreenSpaceCanvas2D(scene,
             {
                 id: "ScreenCanvas",
@@ -631,11 +636,11 @@
                             {
                                 id: "mainWindow", marginAlignment: "h: center, v:center"
                             }),
-                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 370), new BABYLON.Vector2(1240, 370)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX + 250, middleY - 80), new BABYLON.Vector2(middleX + 400, middleY - 80)], {
                                 id: "play",
                                 border: "#FFFFFFFF", borderThickness: 2
                             }),
-                            new BABYLON.Lines2D([new BABYLON.Vector2(440, 285), new BABYLON.Vector2(760, 285)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX - 400, middleY - 165), new BABYLON.Vector2(middleX - 90,  middleY - 165)], {
                                 id: "upgrades",
                                 border: "#98181fFF", borderThickness: 2
                             })
@@ -651,51 +656,51 @@
                                 id: "mainRect", marginAlignment: "h: center, v:center"
                             }),
 
-                            new BABYLON.Lines2D([new BABYLON.Vector2(460, 620), new BABYLON.Vector2(520, 620)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX - 380, middleY + 160), new BABYLON.Vector2(middleX - 320, middleY + 160)], {
                                 id: "back",
                                 border: "#FFFFFFFF", borderThickness: 2
                             }),
 
-                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 473), new BABYLON.Vector2(1210, 473)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX + 230, middleY + 40), new BABYLON.Vector2(middleX + 360, middleY + 40)], {
                                 id: "upgrade1",
                                 border: "#98181fFF", borderThickness: 2
                             }),
-                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 373), new BABYLON.Vector2(1210, 373)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX + 230, middleY - 50), new BABYLON.Vector2(middleX + 360, middleY - 50)], {
                                 id: "upgrade2",
                                 border: "#98181fFF", borderThickness: 2
                             }),
-                            new BABYLON.Lines2D([new BABYLON.Vector2(1080, 273), new BABYLON.Vector2(1210, 273)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX + 230, middleY - 140), new BABYLON.Vector2(middleX + 360, middleY - 140)], {
                                 id: "upgrade3",
                                 border: "#98181fFF", borderThickness: 2
                             }),
 
                             new BABYLON.Sprite2D(upgradeButton,
                             {
-                                id: "mainRect1", x: 1080, y: 485
+                                id: "mainRect1", x: middleX + 220, y: middleY + 45
                             }),
                             new BABYLON.Sprite2D(upgradeButton,
                             {
-                                id: "mainRect2", x: 1080, y: 385
+                                id: "mainRect2", x: middleX + 220, y: middleY - 45
                             }),
                             new BABYLON.Sprite2D(upgradeButton,
                             {
-                                id: "mainRect3", x: 1080, y: 285
+                                id: "mainRect3", x: middleX + 220, y: middleY - 135
                             }),
 
 
                             new BABYLON.Text2D(p1.cannonDamage+"  ",
                             {
-                                id: "text34", x: 880, y: 473,
+                                id: "text34", x: middleX + 120, y: middleY + 45,
                                 fontName: "20pt Arial"
                             }),
                             new BABYLON.Text2D(p1.mineDamage+"  ",
                             {
-                                id: "text35", x: 880, y: 373,
+                                id: "text35", x: middleX + 120, y: middleY - 45,
                                 fontName: "20pt Arial"
                             }),
                             new BABYLON.Text2D(p1.hp+"  ",
                             {
-                                id: "text36", x: 880, y: 273,
+                                id: "text36", x: middleX + 120,  y: middleY - 135,
                                 fontName: "20pt Arial"
                             })
                         ]
@@ -743,12 +748,12 @@
                             }),
                             new BABYLON.Rectangle2D(
                             {
-                                id: "mainRect3", x: engine.getRenderWidth()/2 - 140, y: engine.getRenderHeight()-60, width: 300, height: 80,
+                                id: "mainRect3", x: middleX- 140, y: middleY*2 -70, width: 300, height: 80,
                                 children:
                                 [
                                     new BABYLON.Sprite2D(lvl,
                                     {
-                                        id: "mainRec3t", marginAlignment: "h: center, v:center"
+                                        id: "mainRec3t", x: +20, y: 8
                                     }),
                                     new BABYLON.Text2D(level+" ",
                                     {
@@ -778,7 +783,7 @@
                             {
                                 id: "mainRec3t", marginAlignment: "h: center, v:center"
                             }),
-                            new BABYLON.Lines2D([new BABYLON.Vector2(440, 285), new BABYLON.Vector2(620, 285)], {
+                            new BABYLON.Lines2D([new BABYLON.Vector2(middleX - 400, middleY - 165), new BABYLON.Vector2(middleX - 200, middleY - 165)], {
                                 id: "upgrade3",
                                 border: "#98181fFF", borderThickness: 2
                             })
@@ -819,12 +824,15 @@
             if(gameActive)
                 return;
 
-            var x = event.clientX -22;
-            var y = event.clientY -155;
+            var x = event.clientX;
+            var y = event.clientY;
+
+            var middleX = engine.getRenderWidth() / 2;
+            var middleY = engine.getRenderHeight() / 2;
 
             if(activeScreen == "main")
             {
-                if(x > 1040 && y < 400 && y > 300 && x < 1220 )
+                if(x > middleX + 250 && y < middleY + 80 && y > middleY + 25 && x < middleX + 400 )
                 {
                     gameActive = true;
                     //changed = true;
@@ -834,7 +842,7 @@
                     menuCanvas.children[1].levelVisible = false;
                     menuCanvas.children[2].levelVisible = true;
                 }
-                else if(x > 440 && y < 500 && y > 400 && x < 760 )
+                else if(x > middleX - 400 && y < middleY + 165 && y > middleY + 110 && x < middleX - 90 )
                 {
                     menuCanvas.children[0].levelVisible = false;
                     menuCanvas.children[1].levelVisible = true;
@@ -856,23 +864,23 @@
             }
             else if(activeScreen == "upgrades")
             {
-                if(x > 440 && y < 140 && y > 70 && x < 510 )
+                if(x > middleX - 380 && y < middleY - 160 && y > middleY - 230 && x < middleX - 320 )
                 {
                     menuCanvas.children[1].levelVisible = false;
                     menuCanvas.children[0].levelVisible = true;
                     activeScreen = "main";
                 }
-                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && upgrades > 0)
+                else if(x > middleX + 220 && x < middleX + 370 && y > middleY - 85 && y < middleY -40 && upgrades > 0)
                 {
                     upgrades--;
                     p1.upgradePrimary();
                 }
-                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && upgrades > 0)
+                else if(x > middleX + 220 && x < middleX + 370 && y > middleY + 5 && y < middleY + 50 && upgrades > 0)
                 {
                     upgrades--;
-                    upgradesecundary();
+                    p1.upgradeSecondary();
                 }
-                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && upgrades > 0)
+                else if(x > middleX + 220 && x < middleX + 370 && y > middleY + 95 && y < middleY + 140 && upgrades > 0)
                 {
                     upgrades--;
                     p1.upgradeHealth();
@@ -901,7 +909,7 @@
             }
             else if(activeScreen == "gameOver")
             {
-                if(x > 440 && y < 500 && y > 400 && x < 760  )
+                if(x > middleX - 400 && y < middleY + 165 && y > middleY + 105 && x < middleX - 200)
                 {
                     menuCanvas.children[4].levelVisible = false;
                     menuCanvas.children[0].levelVisible = true;
@@ -922,16 +930,19 @@
                 return;
 
 
-            var x = event.clientX -22;
-            var y = event.clientY -155;
+            var x = event.clientX;
+            var y = event.clientY;
+
+            var middleX = engine.getRenderWidth() / 2;
+            var middleY = engine.getRenderHeight() / 2;
 
             if(activeScreen == "main")
             {
-                if(x > 1040 && y < 400 && y > 300 && x < 1220 )
+                if(x > middleX + 250 && y < middleY + 80 && y > middleY + 25 && x < middleX + 400 )
                 {
                     menuCanvas.children[0].children[1].levelVisible = true;
                 }
-                else if(x > 440 && y < 500 && y > 400 && x < 760 )
+                else if(x > middleX - 400 && y < middleY + 165 && y > middleY + 110 && x < middleX - 90 )
                 {
                     menuCanvas.children[0].children[2].levelVisible = true;
                 }
@@ -943,19 +954,20 @@
             }
             else if(activeScreen == "upgrades")
             {
-                if(x > 440 && y < 140 && y > 70 && x < 510 )
+                if(x > middleX - 380 && y < middleY - 160 && y > middleY - 230 && x < middleX - 320 )
                 {
                     menuCanvas.children[1].children[1].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 235 && y < 275 && upgrades > 0)
+
+                else if(x > middleX + 220 && x < middleX + 370 && y > middleY - 85 && y < middleY -40 && upgrades > 0)
                 {
                     menuCanvas.children[1].children[2].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 335 && y < 375 && upgrades > 0)
+                else if(x > middleX + 220 && x < middleX + 370 && y > middleY + 5 && y < middleY + 50 && upgrades > 0)
                 {
                     menuCanvas.children[1].children[3].levelVisible = true;
                 }
-                else if(x > 1080 && x < 1210 && y > 435 && y < 475 && upgrades > 0)
+                else if(x > middleX + 220 && x < middleX + 370 && y > middleY + 95 && y < middleY + 140 && upgrades > 0)
                 {
                     menuCanvas.children[1].children[4].levelVisible = true;
                 }
@@ -982,7 +994,7 @@
             }
             else if(activeScreen == "gameOver")
             {
-                if(x > 440 && y < 500 && y > 400 && x < 760 )
+                if(x > middleX - 400 && y < middleY + 165 && y > middleY + 105 && x < middleX - 200)
                 {
                     menuCanvas.children[4].children[1].levelVisible = true;
                 }
@@ -1001,7 +1013,7 @@
         {
             var scene = new BABYLON.Scene(engine);
 
-            var gravityVector = new BABYLON.Vector3(0,-9.81, 0);
+            var gravityVector = new BABYLON.Vector3(0,-19.81, 0);
             var physicsPlugin = new BABYLON.CannonJSPlugin();
 
             scene.enablePhysics(gravityVector, physicsPlugin);
@@ -1085,6 +1097,8 @@
 
 
             });
+
+
 
 
             var spriteManagerTrees = new BABYLON.SpriteManager("treesManager", "assets/tree1.png", 20, 600, scene);
@@ -1179,6 +1193,11 @@
                                         break;
                     }
                 }
+
+
+                if(keys[88] && p1.mines.length < p1.mineLimit)
+                    p1.plant(scene);
+
             }, false);
 
             window.addEventListener("keyup", function(evt)
