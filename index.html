@@ -5,6 +5,7 @@
     <!-- link to the last version of babylon -->
     <script src="scripts\babylon.custom.js"></script>
     <script src="scripts\babylon.objFileLoader.js"></script>
+	<script src="scripts\howler.core.js"></script>
     <link rel="stylesheet" href="style\style.css">
 
 </head>
@@ -13,7 +14,21 @@
 
 
     <script>
-
+		var sound1 = new Howl({
+		src: ['assets/shot.mp3'],
+		volume: 0.5
+		});
+		var sound2 = new Howl({
+		src: ['assets/title.mp3'],
+		loop: true,
+		volume: 0.5
+		});
+		sound2.play();
+		var sound3 = new Howl({
+		src: ['assets/playing.mp3'],
+		loop: true,
+		volume: 0.5
+		});
         window.addEventListener('DOMContentLoaded', function()
         {
             // your code here
@@ -97,6 +112,7 @@
                 {
                     p1.shoot(scene);
                     canShoot = false;
+					sound1.play();
                 }
 
                 //V- VIEW
@@ -894,6 +910,8 @@
                     gameActive = true;
                     //changed = true;
                     activeScreen = "play";
+					sound2.stop();
+					sound3.play();
 
                     menuCanvas.children[0].levelVisible = false;
                     menuCanvas.children[1].levelVisible = false;
@@ -972,6 +990,8 @@
                     menuCanvas.children[0].levelVisible = true;
                     activeScreen = "main";
                     resetScene(false);
+					sound3.stop();
+					sound2.play();
                 }
                 else
                 {
