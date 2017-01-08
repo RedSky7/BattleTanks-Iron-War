@@ -439,16 +439,37 @@
             }
 
 
+            var rotz = p1.player.rotationQuaternion.toEulerAngles();
 
-            if(p1.player.rotationQuaternion.x > 0.8 || p1.player.rotationQuaternion.z > 0.4  || p1.hp <= 0)
+            if( rotz.z > 0.7  || rotz.z < -0.7 || rotz.x > 0.7 || rotz.x < -0.7 || p1.hp <= 0)
             {
+                //if(rotz.z > 0.7 )
+                    //alert(p1.player.rotationQuaternion.z );
+                    //p1.player.rotationQuaternion.z -= 0.2;
+                    //p1.player.setDeltaRotation
+                //else
+                    //alert(p1.player.rotationQuaternion.z );
+                    //p1.player.rotationQuaternion.z += 0.2;
+
+                p1.player.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,-110,0));
+                var temp = new BABYLON.Vector3(0, 0, 0);
+
+                p1.player.position.y +=3;
+                var temp2 = p1.player.rotationQuaternion.y;
+                p1.player.rotationQuaternion  = temp.toQuaternion();
+                p1.player.rotationQuaternion.y = temp2;
+                //p1.player.rotationQuaternion = temp;
+
+                //p1.player.physicsImpostor.dispose();
+
+                /*
                 menuCanvas.children[3].children[0].children[0].levelVisible = false;
                 p1.player.dispose();
                 activeScreen = "gameOver";
                 gameActive = false;
                 levelUp = false;
                 menuCanvas.children[4].levelVisible = true;
-                return;
+                return;*/
             }
 
 
@@ -457,6 +478,39 @@
                 upgrades++;
                 upgradeBox.dispose();
                 upgradeBox = null;
+            }
+
+
+            for(i = 0; i < bots.length; i++)
+            {
+                if(bots[i] == null)
+                    continue;
+
+
+                var rotz = bots[i].player.rotationQuaternion.toEulerAngles();
+
+                if( rotz.z > 0.7  || rotz.z < -0.7 || rotz.x > 0.7 || rotz.x < -0.7 || p1.hp <= 0)
+                {
+                    bots[i].player.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,-110,0));
+                    var temp = new BABYLON.Vector3(0, 0, 0);
+
+                    bots[i].player.position.y +=3;
+                    var temp2 = bots[i].player.rotationQuaternion.y;
+                    bots[i].player.rotationQuaternion  = temp.toQuaternion();
+                    bots[i].player.rotationQuaternion.y = temp2;
+                    //p1.player.rotationQuaternion = temp;
+
+
+                }
+
+
+                if(bots[i].hp <= 0)
+                {
+                    menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
+                    bots[i].player.dispose();
+                    bots[i] = null;
+                    enemies--;
+                }
             }
 
 
@@ -480,18 +534,7 @@
             }*/
 
 
-            for(i = 0; i < bots.length; i++)
-            {
-                if(bots[i] == null)
-                    continue;
-                if(bots[i].hp <= 0)
-                {
-                    menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
-                    bots[i].player.dispose();
-                    bots[i] = null;
-                    enemies--;
-                }
-            }
+
 
         }
 
@@ -1140,7 +1183,7 @@
 
 
 
-            controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 150, 45), scene);
+            controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 200, 0), scene);
             controlCamera.setTarget(BABYLON.Vector3.Zero());
 
 
@@ -1212,6 +1255,12 @@
                 if(keys[88] && p1.mines.length < p1.mineLimit)
                     p1.plant(scene);
 
+                if (keys[66])
+                {
+                    var rotz = p1.player.rotationQuaternion.toEulerAngles();
+                    alert(rotz.x+", "+rotz.z);
+                }
+
             }, false);
 
             window.addEventListener("keyup", function(evt)
@@ -1225,6 +1274,8 @@
             {
                 gameActive = true;
             }
+
+
 
             //handleKeys();
 
