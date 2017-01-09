@@ -490,6 +490,15 @@
                 menuCanvas.children[4].levelVisible = true;
                 return;*/
             }
+			if(p1.hp <= 0){
+				menuCanvas.children[3].children[0].children[0].levelVisible = false;
+                p1.player.dispose();
+                activeScreen = "gameOver";
+                gameActive = false;
+                levelUp = false;
+                menuCanvas.children[4].levelVisible = true;
+                return;
+			}
 
 
             if(upgradeBox != null && p1.player.intersectsMesh(upgradeBox, true))
