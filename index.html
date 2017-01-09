@@ -1,8 +1,9 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+
     <title>BattleTanks - Iron War</title>
-    <!-- link to the last version of babylon -->
+
     <script src="scripts\babylon.custom.js"></script>
     <script src="scripts\babylon.objFileLoader.js"></script>
 	<script src="scripts\howler.core.js"></script>
@@ -12,34 +13,25 @@
 <body>
     <canvas id="renderCanvas" onclick="handleClick(event)" onmousemove="handleMove(event)"></canvas>
 
-
     <script>
-		var sound1 = new Howl({
-		src: ['assets/shot.mp3'],
-		volume: 0.5
-		});
-		var sound2 = new Howl({
-		src: ['assets/title.mp3'],
-		loop: true,
-		volume: 0.5
-		});
-		sound2.play();
-		var sound3 = new Howl({
-		src: ['assets/playing.mp3'],
-		loop: true,
-		volume: 0.5
-		});
+
+        /*
         window.addEventListener('DOMContentLoaded', function()
         {
             // your code here
 
-        });
+        });*/
 
-        //var player;
+
         var tank = [];
         var bots = [];
         var p1 = new Player("player", " k");
-        var cam = 0;
+
+////upgradeBox
+        var woodenBox;
+        var upgradeBox;
+
+
 
         var points = 0;
         var ground;
@@ -58,7 +50,12 @@
 
         var keys = [];
 
+////CAMERAS
         var FPCamera, controlCamera;
+        var cameraSelector = 0;
+
+////SOUNDS
+        var titleSound, shootSound, playSound, explosionSound, hitSound;
 
 
 
@@ -80,18 +77,16 @@
             a = 0;
             tank = [];
             bots = [];
-            p1 = new Player("player", " k");
-            cam = 0;
+            p1 = new Player("player", " ");
+            cameraSelector = 0;
             scene = createScene();
         }
-
-
 
         function handleKeys()
         {
             if(gameActive && p1.player != null)
             {
-
+                //A
                 if(keys[65])
                     p1.player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
 
@@ -112,28 +107,26 @@
                 {
                     p1.shoot(scene);
                     canShoot = false;
-					sound1.play();
+                    shootSound.volume = 0.5;
+					shootSound.play();
                 }
-
-                //V- VIEW
-
-                //X- MINE
-
             }
         }
 
         function setUpLevel1()
         {
             enemies = 3;
-            var temp = p1.player.clone();
-            bots = [];
-            bots.push(new Player("bot 1", temp.clone()));
-            bots.push(new Player("bot 2", temp.clone()));
-            bots.push(new Player("bot 3", temp.clone()));
 
-            bots[0].mineLimit = 3;
+            bots = [];
+            bots.push(new Player("bot 1", p1.player.clone()));
+            bots.push(new Player("bot 2", p1.player.clone()));
+            bots.push(new Player("bot 3", p1.player.clone()));
+
+            bots[0].mineLimit = 5;
             bots[1].mineLimit = 2;
+            bots[1].mineDamage = 50;
             bots[2].mineLimit = 3;
+            bots[2].cannonDamage = 23;
 
         }
 
@@ -144,31 +137,15 @@
             bots.push(new Player("bot 0", p1.player.clone()));
             bots[bots.length - 1].cannonDamage = 10;
             bots.push(new Player("bot 1", p1.player.clone()));
+            bots[bots.length - 1].mineLimit = 10;
             bots.push(new Player("bot 2", p1.player.clone()));
-            bots.push(new Player("bot 3", p1.player.clone()));
-            bots[bots.length - 1].cannonDamage = 10;
-            bots.push(new Player("bot 4", p1.player.clone()));
-        }
-
-        function setUpLevel3()
-        {
-            enemies = 5;
-
-            bots.push(new Player("bot 0", p1.player.clone()));
-            bots[bots.length - 1].cannonDamage = 10;
-            bots.push(new Player("bot 1", p1.player.clone()));
-            bots.push(new Player("bot 2", p1.player.clone()));
-            bots.push(new Player("bot 3", p1.player.clone()));
             bots[bots.length - 1].mineDamage = 50;
+            bots[bots.length - 1].mineLimit = 5;
+            bots.push(new Player("bot 3", p1.player.clone()));
+            bots[bots.length - 1].cannonDamage = 25;
             bots.push(new Player("bot 4", p1.player.clone()));
-            bots[bots.length - 1].cannonDamage = 30;
-            return;
         }
 
-        function setUpLevel4()
-        {
-            return;
-        }
 
         function Player(name, mesh)
         {
@@ -179,17 +156,15 @@
                 this.maxHP = 100;
 
                 this.cannonDamage = 5;
+                this.bullets = [];
 
                 this.mineDamage = 5;
+                this.mineLimit = 1;
+                this.mines = [];
 
             this.speed = 0.008;
-            this.gravity = 0.15;
 
-            this.bullets = [];
-
-            this.mineLimit = 1;
-            this.mines = [];
-
+            //"UI" - for Bots
             this.tempL = 10;
             this.tempD = 10;
             this.override = 0;
@@ -322,7 +297,6 @@
             for(i = 0; i < bots.length; i++)
                 checkForFall(bots[i]);
 
-
             groundHit = false;
 
             for(i = 0; i < p1.bullets.length; i++)
@@ -354,6 +328,7 @@
                 {
                     if(checkForHit(p1, p1.bullets, i, bots, j, "cannonDamage"))
                     {
+                        hitSound.play();
                         i--;
                         break;
                     }
@@ -369,6 +344,7 @@
                 {
                     if(checkForHit(p1, p1.mines, i, bots, j, "mineDamage"))
                     {
+                        explosionSound.play();
                         i--;
                         break;
                     }
@@ -378,6 +354,7 @@
                 {
                     p1.hp -= p1.mineDamage;
                     points -= 20;
+                    explosionSound.play();
 
                     p1.mines[i].dispose();
                     p1.mines.splice(i, 1);
@@ -414,6 +391,7 @@
                     if(bots[i].bullets[j].intersectsMesh(p1.player, true))
                     {
                         p1.hp -= bots[i].cannonDamage;
+                        hitSound.play();
 
                         bots[i].bullets[j].dispose();
                         bots[i].bullets.splice(j, 1);
@@ -438,6 +416,7 @@
                     if(bots[i].mines[j].intersectsMesh(p1.player, true))
                     {
                         p1.hp -= bots[i].mineDamage;
+                        explosionSound.play();
 
                         bots[i].mines[j].dispose();
                         bots[i].mines.splice(j, 1);
@@ -462,14 +441,6 @@
 
             if( rotz.z > 0.7  || rotz.z < -0.7 || rotz.x > 0.7 || rotz.x < -0.7 || p1.hp <= 0)
             {
-                //if(rotz.z > 0.7 )
-                    //alert(p1.player.rotationQuaternion.z );
-                    //p1.player.rotationQuaternion.z -= 0.2;
-                    //p1.player.setDeltaRotation
-                //else
-                    //alert(p1.player.rotationQuaternion.z );
-                    //p1.player.rotationQuaternion.z += 0.2;
-
                 p1.player.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,-110,0));
                 var temp = new BABYLON.Vector3(0, 0, 0);
 
@@ -477,18 +448,6 @@
                 var temp2 = p1.player.rotationQuaternion.y;
                 p1.player.rotationQuaternion  = temp.toQuaternion();
                 p1.player.rotationQuaternion.y = temp2;
-                //p1.player.rotationQuaternion = temp;
-
-                //p1.player.physicsImpostor.dispose();
-
-                /*
-                menuCanvas.children[3].children[0].children[0].levelVisible = false;
-                p1.player.dispose();
-                activeScreen = "gameOver";
-                gameActive = false;
-                levelUp = false;
-                menuCanvas.children[4].levelVisible = true;
-                return;*/
             }
 			if(p1.hp <= 0){
 				menuCanvas.children[3].children[0].children[0].levelVisible = false;
@@ -514,7 +473,6 @@
                 if(bots[i] == null)
                     continue;
 
-
                 var rotz = bots[i].player.rotationQuaternion.toEulerAngles();
 
                 if( rotz.z > 0.7  || rotz.z < -0.7 || rotz.x > 0.7 || rotz.x < -0.7 || p1.hp <= 0)
@@ -526,9 +484,6 @@
                     var temp2 = bots[i].player.rotationQuaternion.y;
                     bots[i].player.rotationQuaternion  = temp.toQuaternion();
                     bots[i].player.rotationQuaternion.y = temp2;
-                    //p1.player.rotationQuaternion = temp;
-
-
                 }
 
 
@@ -547,6 +502,7 @@
                 level++;
                 levelUp = true;
                 activeScreen = "play";
+                gameActive = false;
                 resetScene(true);
             }
 
@@ -560,118 +516,25 @@
                     p1.bullets.splice(rem[temp], 1);
                 }
             }*/
-
-
-
-
         }
 
-        var woodenBox;
-        var upgradeBox;
 
-        function createUpgradeBox()
+        function loadSounds()
         {
-            if(upgradeBox != null)
-                upgradeBox.dispose();
-            upgradeBox = woodenBox.clone();
-            upgradeBox.position = new BABYLON.Vector3(Math.floor(Math.random() * 200)-100, 15, Math.floor(Math.random() * 200)-100);
-            upgradeBox.physicsImpostor = new BABYLON.PhysicsImpostor(upgradeBox, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
+            shootSound = new Howl({src: ['assets/sounds/shoot.mp3'], volume: 0.5});
+    		titleSound = new Howl({src: ['assets/sounds/title.mp3'], loop: true, volume: 0.5});
+    		playSound = new Howl({src: ['assets/sounds/play.mp3'], loop: true, volume: 0.5});
+            explosionSound= new Howl({src: ['assets/sounds/explosion.wav'], volume: 0.5});
+            hitSound= new Howl({src: ['assets/sounds/hit.wav'],volume: 0.5});
+
+            titleSound.play();
         }
 
-        function createBots(scene)
-        {
-            for(i = 0; i < bots.length; i++)
-            {
-                bots[i].player.position =  new BABYLON.Vector3(-20 * i , 20, 15);
-                bots[i].player.physicsImpostor = new BABYLON.PhysicsImpostor(bots[i].player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
-
-                new BABYLON.Group2D(
-                {
-                    parent: menuCanvas.children[3], id: "Botd#" + i, width: 80, height: 40, trackNode: bots[i].player, origin: BABYLON.Vector2.Zero(),
-                    children:
-                    [
-                        new BABYLON.Rectangle2D(
-                        {
-                            id: "firstRecto"+i, width: 60, height: 10, x: -30, y: 50, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
-                        })
-                    ]
-                });
-
-                menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
-            }
-        }
-
-
-        function move()
-        {
-            for(i = 0; i < bots.length; i++)
-            {
-                if(bots[i] == null)
-                    continue;
-
-                if(bots[i].override == 0 && (bots[i].player.position.x > 70 || bots[i].player.position.x < -70 || bots[i].player.position.z > 70 || bots[i].player.position.z < -70))
-                {
-                    if(Math.floor((Math.random() * 2)) == 0)
-                        bots[i].tempD = 9;
-                    else
-                        bots[i].tempD = 7;
-                    bots[i].override = 10;
-                }
-
-                if(bots[i].override == 0)
-                {
-                    if(Math.floor((Math.random() * 128)) == 11 && bots[i].tempL < 3)
-                        bots[i].tempL = 25;
-
-                    else if (Math.floor((Math.random() * 128)) == 10 && bots[i].tempD < 3)
-                        bots[i].tempD = 24;
-
-                    if(bots[i].tempL > 0)
-                    {
-                        bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
-                        bots[i].tempL--;
-                    }
-                    else if(bots[i].tempD > 0)
-                    {
-                        bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
-                        bots[i].tempD--;
-                    }
-                    else
-                    {
-                        bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
-
-                    }
-                }
-
-
-
-                if(bots[i].override > 0)
-                {
-                    if(bots[i].tempL > 0)
-                    {
-                        bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
-                        bots[i].tempL--;
-                    }
-                    else if(bots[i].tempD > 0)
-                    {
-                        bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
-                        bots[i].tempD--;
-                    }
-                    else
-                    {
-                        bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
-                        bots[i].override--;
-                    }
-                }
-
-
-                if(Math.floor((Math.random() * 1280)) < 100)
-                    bots[i].shoot(scene);
-
-                if(Math.floor((Math.random() * 1280)) == 100)
-                    bots[i].plant(scene);
-            }
-        }
+    ////////////////////////////////
+    //
+    //  CREATE section
+    //
+    ////////////////////////////////
 
 
         var canvas = document.getElementById('renderCanvas');
@@ -683,27 +546,26 @@
         function create2D(scene)
         {
 
-            var mainWindow = new BABYLON.Texture("assets/mainMenu.png", scene);
+            var mainWindow = new BABYLON.Texture("assets/textures/screens/mainMenu.png", scene);
             mainWindow.hasAlpha = true;
 
-            var upgradeWindow = new BABYLON.Texture("assets/upgradeMenu.png", scene);
-            var upgradeButton = new BABYLON.Texture("assets/upgradeButton.png", scene);
+            var upgradeWindow = new BABYLON.Texture("assets/textures/screens/upgradeMenu.png", scene);
+            var upgradeButton = new BABYLON.Texture("assets/textures/screens/upgradeButton.png", scene);
             upgradeWindow.hasAlpha = true;
             upgradeButton.hasAlpha = true;
 
-            var lol = new BABYLON.Texture("assets/enemies2.png", scene);
-            var lol2 = new BABYLON.Texture("assets/score.png", scene);
-            var lvl = new BABYLON.Texture("assets/level.png", scene);
-            lol2.hasAlpha = true;
-            lol.hasAlpha = true;
-            lvl.hasAlpha = true;
+            var enemiesBar = new BABYLON.Texture("assets/textures/screens/enemies.png", scene);
+            var scoreBar = new BABYLON.Texture("assets/textures/screens/score.png", scene);
+            var levelBar = new BABYLON.Texture("assets/textures/screens/level.png", scene);
+            scoreBar.hasAlpha = true;
+            enemiesBar.hasAlpha = true;
+            levelBar.hasAlpha = true;
 
-            var gameOverWindow = new BABYLON.Texture("assets/gameOver.png", scene);
+            var gameOverWindow = new BABYLON.Texture("assets/textures/screens/gameOver.png", scene);
             gameOverWindow.hasAlpha = true;
 
             var middleX = engine.getRenderWidth() / 2;
             var middleY = engine.getRenderHeight() / 2;
-
 
             menuCanvas = new BABYLON.ScreenSpaceCanvas2D(scene,
             {
@@ -802,7 +664,7 @@
                                 id: "mainRect", x: 0, y: 0, width: 300, height: 80,
                                 children:
                                 [
-                                    new BABYLON.Sprite2D(lol2,
+                                    new BABYLON.Sprite2D(scoreBar,
                                     {
                                         id: "mainRect2", x: 0, y: 0,
                                     }),
@@ -819,7 +681,7 @@
                                 id: "mainRect2", x: 0, y: engine.getRenderHeight()-60, width: 300, height: 80,
                                 children:
                                 [
-                                    new BABYLON.Sprite2D(lol,
+                                    new BABYLON.Sprite2D(enemiesBar,
                                     {
                                         id: "mainRect", marginAlignment: "h: center, v:center"
                                     }),
@@ -836,7 +698,7 @@
                                 id: "mainRect3", x: middleX- 140, y: middleY*2 -70, width: 300, height: 80,
                                 children:
                                 [
-                                    new BABYLON.Sprite2D(lvl,
+                                    new BABYLON.Sprite2D(levelBar,
                                     {
                                         id: "mainRec3t", x: +20, y: 8
                                     }),
@@ -902,7 +764,188 @@
         }
 
 
+        function createUpgradeBox()
+        {
+            if(upgradeBox != null)
+                upgradeBox.dispose();
+            upgradeBox = woodenBox.clone();
+            upgradeBox.position = new BABYLON.Vector3(Math.floor(Math.random() * 200)-100, 15, Math.floor(Math.random() * 200)-100);
+            upgradeBox.physicsImpostor = new BABYLON.PhysicsImpostor(upgradeBox, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
+        }
 
+        function createTrees(numberOfWide, numberOfTall, scene)
+        {
+            var spriteManagerTreesWide = new BABYLON.SpriteManager("treesManager", "assets/textures/sprites/treeWide.png", 20, 600, scene);
+            var spriteManagerTreesTall = new BABYLON.SpriteManager("treesManager", "assets/textures/sprites/treeTall.png", 20, 1083, scene);
+
+            for (i = 0; i < numberOfWide; i++)
+            {
+                var tree = new BABYLON.Sprite("tree", spriteManagerTreesWide);
+                tree.position.x = Math.random() * 150 - 60;
+                tree.position.z = Math.random() * 150 - 60;
+                tree.position.y = 15;
+                tree.width = 10;
+                tree.height = 10;
+            }
+
+            for (i = 0; i < numberOfTall; i++)
+            {
+                var tree = new BABYLON.Sprite("tree", spriteManagerTreesTall);
+                tree.position.x = Math.random() * 150 - 50;
+                tree.position.z = Math.random() * 175 - 85;
+                tree.position.y = 15;
+                tree.width = 10;
+                tree.height = 10;
+            }
+        }
+
+        function createCameras(scene)
+        {
+            controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 200, 0), scene);
+            controlCamera.setTarget(BABYLON.Vector3.Zero());
+
+            FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
+            FPCamera.radius = 30;
+            FPCamera.heightOffset = 10;
+            FPCamera.rotationOffset = 0;
+        }
+
+        function createSkyBox(scene)
+        {
+            var skybox = BABYLON.Mesh.CreateBox("skyBox", 400.0, scene);
+            var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("assets/textures/skybox/skybox", scene);
+            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.disableLighting = true;
+            skybox.material = skyboxMaterial;
+        }
+
+        function createGround(scene)
+        {
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/textures/ground/groundTexture.jpg", scene);
+            groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+
+            ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/textures/ground/heightMap.png", 200, 200, 50, 0, 40, scene, false, function ()
+            {
+                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0}, scene);
+                ground.material = groundMaterial;
+
+            });
+        }
+
+        function createBots(scene)
+        {
+            for(i = 0; i < bots.length; i++)
+            {
+                bots[i].player.position =  new BABYLON.Vector3(-20 * i , 20, 15);
+                bots[i].player.physicsImpostor = new BABYLON.PhysicsImpostor(bots[i].player, BABYLON.PhysicsEngine.BoxImpostor, { mass: 100, friction: 0.91, restitution: 0 }, scene);
+
+                new BABYLON.Group2D(
+                {
+                    parent: menuCanvas.children[3], id: "Botd#" + i, width: 80, height: 40, trackNode: bots[i].player, origin: BABYLON.Vector2.Zero(),
+                    children:
+                    [
+                        new BABYLON.Rectangle2D(
+                        {
+                            id: "firstRecto"+i, width: 60, height: 10, x: -30, y: 50, origin: BABYLON.Vector2.Zero(), border: "#FFFFFFFF", fill: "#40C040CC"
+                        })
+                    ]
+                });
+
+                menuCanvas.children[3].children[i+1].children[0].levelVisible = false;
+            }
+        }
+
+    ////////////////////////////////
+    //
+    //  "AI" SECTION
+    //
+    ////////////////////////////////
+
+        function move()
+        {
+            for(i = 0; i < bots.length; i++)
+            {
+                if(bots[i] == null)
+                    continue;
+
+                if(bots[i].override == 0 && (bots[i].player.position.x > 70 || bots[i].player.position.x < -70 || bots[i].player.position.z > 70 || bots[i].player.position.z < -70))
+                {
+                    if(Math.floor((Math.random() * 2)) == 0)
+                        bots[i].tempD = 9;
+                    else
+                        bots[i].tempD = 7;
+                    bots[i].override = 10;
+                }
+
+                if(bots[i].override == 0)
+                {
+                    if(Math.floor((Math.random() * 128)) == 11 && bots[i].tempL < 3)
+                        bots[i].tempL = 25;
+
+                    else if (Math.floor((Math.random() * 128)) == 10 && bots[i].tempD < 3)
+                        bots[i].tempD = 24;
+
+                    if(bots[i].tempL > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempL--;
+                    }
+                    else if(bots[i].tempD > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempD--;
+                    }
+                    else
+                    {
+                        bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+
+                    }
+                }
+
+
+
+                if(bots[i].override > 0)
+                {
+                    if(bots[i].tempL > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, -0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempL--;
+                    }
+                    else if(bots[i].tempD > 0)
+                    {
+                        bots[i].player.rotate(BABYLON.Axis.Y, 0.05, BABYLON.Space.LOCAL);
+                        bots[i].tempD--;
+                    }
+                    else
+                    {
+                        bots[i].player.translate(BABYLON.Axis.Z, -0.5, BABYLON.Space.LOCAL);
+                        bots[i].override--;
+                    }
+                }
+
+
+                if(Math.floor((Math.random() * 1280)) < 50)
+                {
+                    bots[i].shoot(scene)
+                    shootSound.volume = 0.1;
+					shootSound.play();
+                }
+
+                if(Math.floor((Math.random() * 1280)) == 100)
+                    bots[i].plant(scene);
+            }
+        }
+
+    ////////////////////////////////
+    //
+    //  HANDLE MOUSE section
+    //
+    ////////////////////////////////
 
         function handleClick(event)
         {
@@ -922,8 +965,8 @@
                     gameActive = true;
                     //changed = true;
                     activeScreen = "play";
-					sound2.stop();
-					sound3.play();
+					titleSound.stop();
+					playSound.play();
 
                     menuCanvas.children[0].levelVisible = false;
                     menuCanvas.children[1].levelVisible = false;
@@ -1002,8 +1045,8 @@
                     menuCanvas.children[0].levelVisible = true;
                     activeScreen = "main";
                     resetScene(false);
-					sound3.stop();
-					sound2.play();
+					playSound.stop();
+					titleSound.play();
                 }
                 else
                 {
@@ -1098,6 +1141,13 @@
         var menuCanvas;
         var mine;
 
+
+    ////////////////////////////////
+    //
+    //  MAIN section
+    //
+    ////////////////////////////////
+
         var createScene = function()
         {
             var scene = new BABYLON.Scene(engine);
@@ -1109,33 +1159,33 @@
 
             var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
 
+            loadSounds();
+
             create2D(scene);
 
-            BABYLON.SceneLoader.ImportMesh("", "", "tank.obj", scene, function (meshes)
+            BABYLON.SceneLoader.ImportMesh("", "", "assets/models/tank.obj", scene, function (meshes)
             {
                 tank = meshes;
 
                 var tankMaterials = [];
 
                 tankMaterials[0] = new BABYLON.StandardMaterial("Mat0", scene);
-                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/player/Main Body.png", scene);
+                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/textures/player/Main Body.png", scene);
 
                 tankMaterials[1] = new BABYLON.StandardMaterial("Mat1", scene);
-                tankMaterials[1].diffuseTexture = new BABYLON.Texture("assets/player/Main Body 2.png", scene);
+                tankMaterials[1].diffuseTexture = new BABYLON.Texture("assets/textures/player/Main Body 2.png", scene);
 
                 tankMaterials[2] = new BABYLON.StandardMaterial("Mat2", scene);
-                tankMaterials[2].diffuseTexture = new BABYLON.Texture("assets/player/Turret.png", scene);
+                tankMaterials[2].diffuseTexture = new BABYLON.Texture("assets/textures/player/Turret.png", scene);
 
                 tankMaterials[3] = new BABYLON.StandardMaterial("Mat3", scene);
-                tankMaterials[3].diffuseTexture = new BABYLON.Texture("assets/player/Gun.png", scene);
+                tankMaterials[3].diffuseTexture = new BABYLON.Texture("assets/textures/player/Gun.png", scene);
 
 
                 for(i = 0; i < tank.length; i++)
                 {
                     tank[i].material = tankMaterials[i];
                 }
-
-
 
 
                 p1 = new Player("player", BABYLON.Mesh.MergeMeshes(tank));
@@ -1154,28 +1204,27 @@
 
                 createBots(scene);
 
-
             });
 
 
-            BABYLON.SceneLoader.ImportMesh("", "", "box.obj", scene, function (meshes)
+            BABYLON.SceneLoader.ImportMesh("", "", "assets/models/box.obj", scene, function (meshes)
             {
                 var material = new BABYLON.StandardMaterial("Mat0", scene);
-                material.diffuseTexture = new BABYLON.Texture("assets/box/WoodPlanks_Color.jpg", scene);
+                material.diffuseTexture = new BABYLON.Texture("assets/textures/box/woodTexture.jpg", scene);
 
                 meshes[0].material = material;
 
                 woodenBox = meshes[0];
             });
 
-            BABYLON.SceneLoader.ImportMesh("", "", "mine.obj", scene, function (meshes)
+            BABYLON.SceneLoader.ImportMesh("", "", "assets/models/mine.obj", scene, function (meshes)
             {
                 tank = meshes;
 
                 var tankMaterials = [];
 
                 tankMaterials[0] = new BABYLON.StandardMaterial("Mat2", scene);
-                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/player/mine.png", scene);
+                tankMaterials[0].diffuseTexture = new BABYLON.Texture("assets/textures/mine/mine.png", scene);
                 tankMaterials[0].specularColor = new BABYLON.Color3(0.1, 0.1, 0);
 
                 tank[0].material = tankMaterials[0];
@@ -1185,148 +1234,35 @@
                 mine.scaling(new BABYLON.Vector3(-100, 1, 1));
                 mine.rotate(BABYLON.Axis.Z, -0.05, BABYLON.Space.LOCAL);
 
-
             });
 
+            createTrees(33, 21, scene);
 
+            createCameras(scene);
 
+            createSkyBox(scene);
 
-            var spriteManagerTrees = new BABYLON.SpriteManager("treesManager", "assets/tree1.png", 20, 600, scene);
-            var spriteManagerTrees3 = new BABYLON.SpriteManager("treesManager", "assets/tree3.png", 20, 1083, scene);
-
-
-            for (i = 0; i < 33; i++)
-            {
-                var tree = new BABYLON.Sprite("tree", spriteManagerTrees);
-                tree.position.x = Math.random() * 150 - 60;
-                tree.position.z = Math.random() * 150 - 60;
-                tree.position.y = 15;
-                tree.width = 10;
-                tree.height = 10;
-            }
-
-            for (i = 0; i < 21; i++)
-            {
-                var tree = new BABYLON.Sprite("tree", spriteManagerTrees3);
-                tree.position.x = Math.random() * 150 - 50;
-                tree.position.z = Math.random() * 175 - 85;
-                tree.position.y = 15;
-                tree.width = 10;
-                tree.height = 10;
-            }
-
-
-
-            controlCamera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 200, 0), scene);
-            controlCamera.setTarget(BABYLON.Vector3.Zero());
-
-
-            FPCamera = new BABYLON.FollowCamera("FollowCam", new BABYLON.Vector3(0, 15, 45), scene);
-            FPCamera.radius = 30;
-            FPCamera.heightOffset = 10;
-            FPCamera.rotationOffset = 0;
-
-
-
-            var skybox = BABYLON.Mesh.CreateBox("skyBox", 400.0, scene);            //400
-            var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
-            skyboxMaterial.backFaceCulling = false;
-            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("assets/skybox/skybox", scene);
-            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-            skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-            skyboxMaterial.disableLighting = true;
-            skybox.material = skyboxMaterial;
-
-
-
-
-            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
-            groundMaterial.diffuseTexture = new BABYLON.Texture("assets/gravel3.jpg", scene);
-            groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-
-
-            ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "assets/Heightmap.png", 200, 200, 50, 0, 40, scene, false, function ()
-            {
-                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0}, scene);
-                ground.material = groundMaterial;
-
-            });
-
-
-            /*
-            var ground = BABYLON.Mesh.CreateGround('ground1', 60, 60, 2, scene);
-            ground.setPhysicsState(BABYLON.PhysicsEngine.HeightmapImpostor, { mass: 0 });
-            ground.material = groundMaterial;
-            */
-
-            window.addEventListener("keydown", function(evt)
-            {
-                keys[evt.keyCode] = true;
-
-                if(keys[86])
-                {
-                    cam = ++cam % 3;
-                    switch(cam)
-                    {
-                            case 0:     scene.activeCamera = FPCamera;
-                                        FPCamera.lockedTarget = p1.player;
-                                        FPCamera.radius = 30;
-                                        FPCamera.heightOffset = 10;
-                                        break;
-
-                            case 1:     scene.activeCamera = FPCamera;
-                                        FPCamera.lockedTarget = p1.player;
-                                        FPCamera.radius = 30;
-                                        FPCamera.heightOffset = 80;
-                                        break;
-
-                            case 2:     scene.activeCamera = controlCamera;
-                                        break;
-                    }
-                }
-
-
-                if(keys[88] && p1.mines.length < p1.mineLimit)
-                    p1.plant(scene);
-
-                if (keys[66])
-                {
-                    var rotz = p1.player.rotationQuaternion.toEulerAngles();
-                    alert(rotz.x+", "+rotz.z);
-                }
-
-            }, false);
-
-            window.addEventListener("keyup", function(evt)
-            {
-                keys[evt.keyCode] = false;
-            }, false);
-
-
+            createGround(scene);
 
             if(levelUp)
             {
                 gameActive = true;
             }
 
-
-
-            //handleKeys();
-
             return scene;
-
     }
 
 
     var scene = createScene();
     var a = 0;
+
     engine.runRenderLoop(function()
     {
         if(gameActive && scene.isReady())
         {
             move();
             check(scene);
+
             if(!levelUp)
                 handleKeys();
             if(gameActive && !levelUp)
@@ -1334,7 +1270,6 @@
                 menuCanvas.children[2].children[0].children[1].text = points+"  ";
                 menuCanvas.children[2].children[1].children[1].text = enemies+"  ";
 
-                //menuCanvas.children[3].children[0].children[0].children[0].text = "HP: "+p1.hp;
                 if(a == 0)
                 {
                     for(i = 0; i <= bots.length; i++)
@@ -1349,6 +1284,7 @@
                 {
                     createUpgradeBox();
                 }
+
             }
             levelUp = false;
         }
@@ -1357,10 +1293,55 @@
 
 
 
-    window.addEventListener('resize', function() {
+    window.addEventListener("keydown", function(evt)
+    {
+        if(!gameActive)
+            return;
+
+        keys[evt.keyCode] = true;
+
+        if(keys[86])
+        {
+            cameraSelector = ++cameraSelector % 3;
+            switch(cameraSelector)
+            {
+                    case 0:     scene.activeCamera = FPCamera;
+                                FPCamera.lockedTarget = p1.player;
+                                FPCamera.radius = 30;
+                                FPCamera.heightOffset = 10;
+                                break;
+
+                    case 1:     scene.activeCamera = FPCamera;
+                                FPCamera.lockedTarget = p1.player;
+                                FPCamera.radius = 30;
+                                FPCamera.heightOffset = 80;
+                                break;
+
+                    case 2:     scene.activeCamera = controlCamera;
+                                break;
+            }
+        }
+
+        if(keys[88] && p1.mines.length < p1.mineLimit)
+            p1.plant(scene);
+
+    }, false);
+
+    window.addEventListener("keyup", function(evt)
+    {
+        if(!gameActive)
+            return;
+
+        keys[evt.keyCode] = false;
+
+    }, false);
+
+    window.addEventListener('resize', function()
+    {
         engine.resize();
     });
 
     </script>
+
 </body>
 </html>
